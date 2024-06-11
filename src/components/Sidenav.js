@@ -95,7 +95,7 @@ export default function Sidenav() {
      if( token  && token !== '' && token !== null){
          const decoded = jwtDecode(token);
          role = decoded.role;
-         console.log('sidenav' , role);
+         //console.log('sidenav' , role);
         if(role == 'superadmin'){
            setisSuperAdmin(true);
         }

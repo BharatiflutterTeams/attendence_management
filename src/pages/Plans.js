@@ -35,12 +35,12 @@ export default function PlansPage() {
     description: "",
     adult_price: "",
     child_price: "",
-    highlights: [],
-    addOn: "",
-    imageLinks: [],
+    activities: [],
+    addOn: [],
+    image_list: [],
     adult_gold_package : [],
     child_gold_package : [],
-    coupons: [],
+    plan_coupon: [],
   });
   const [selectedPlan, setSelectedPlan] = React.useState(null);
   const [search, setSearch] = React.useState("");
@@ -113,12 +113,12 @@ export default function PlansPage() {
         description: "",
         adult_price: "",
         child_price: "",
-        highlights: [],
-        //addOn: "",
-        imageLinks: [],
+        activities: [],
+        addOn: [],
+        image_list: [],
         adult_gold_package:[],
         child_gold_package:[],
-        coupons: [],
+        plan_coupon: [],
       });
       handleClose();
     } catch (error) {
@@ -159,8 +159,8 @@ export default function PlansPage() {
  }
 
   const handleAddLink = () => {
-    if (newLink && newPlan.imageLinks.length < 5) {
-      setNewPlan({ ...newPlan, imageLinks: [...newPlan.imageLinks, newLink] });
+    if (newLink && newPlan.image_list.length < 5) {
+      setNewPlan({ ...newPlan, image_list: [...newPlan.image_list, newLink] });
       setNewLink("");
     } else {
       setSnackbarMessage("Only 5 image links are allowed");
@@ -191,8 +191,8 @@ export default function PlansPage() {
 
 
   const handleRemoveLink = (index) => {
-    const updatedLinks = newPlan.imageLinks.filter((_, i) => i !== index);
-    setNewPlan({ ...newPlan, imageLinks: updatedLinks });
+    const updatedLinks = newPlan.image_list.filter((_, i) => i !== index);
+    setNewPlan({ ...newPlan, image_list: updatedLinks });
   };
   
   const handleRemoveAdultPoint = (index) => {
@@ -205,11 +205,11 @@ export default function PlansPage() {
   };
 
   const handleHighlightsChange = (event, value) => {
-    setNewPlan({ ...newPlan, highlights: value });
+    setNewPlan({ ...newPlan, activities: value });
   };
 
   const handleCouponsChange = (event, value) => {
-    setNewPlan({ ...newPlan, coupons: value });
+    setNewPlan({ ...newPlan, plan_coupon: value });
   };
 
   const handleSearchChange = (event) => {
@@ -312,7 +312,7 @@ export default function PlansPage() {
                 multiple
                 id="highlights"
                 options={highlightsOptions}
-                value={newPlan.highlights}
+                value={newPlan.activities}
                 onChange={handleHighlightsChange}
                 renderInput={(params) => (
                   <TextField
@@ -346,13 +346,13 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddLink}
-                  disabled={newPlan.imageLinks.length >= 5}
+                  disabled={newPlan.image_list.length >= 5}
                 >
                   Add Link
                 </Button>
               </Box>
               <Box>
-                {newPlan.imageLinks?.map((link, index) => (
+                {newPlan.image_list?.map((link, index) => (
                   <Box
                     key={index}
                     sx={{
@@ -453,7 +453,7 @@ export default function PlansPage() {
                 id="coupons"
                 options={coupons}
                 getOptionLabel={(option) => option.coupon_code}
-                value={newPlan.coupons}
+                value={newPlan.plan_coupon}
                 onChange={handleCouponsChange}
                 renderInput={(params) => (
                   <TextField
@@ -519,17 +519,17 @@ export default function PlansPage() {
                     <Typography variant="body2" color="text.secondary">
                       Description: {plan.description}
                       <br />
-                      Adult Price: ${plan.adult_price}
+                      Adult Price: ₹{plan.adult_price}
                       <br />
-                      Child Price: ${plan.child_price}
+                      Child Price: ₹{plan.child_price}
                       <br />
-                      Highlights: {plan.highlights.join(", ")}
+                      Highlights: {plan.activities.join(", ")}
                       <br />
                       {/* Add-On: {plan.addOn}<br /> */}
-                      Image Links: {plan.imageLinks.join(", ")}
+                      Image Links: {plan.image_list.join(", ")}
                       <br />
                       Coupons:{" "}
-                      {plan.coupons
+                      {plan.plan_coupon
                         .map((coupon) => coupon.coupon_code)
                         .join(", ")}
                       <br />

@@ -20,16 +20,9 @@ const drawerWidth = 240;
 
 export default function CompanyProfile() {
     const Navigate = useNavigate();
-    useEffect(() => { fetchDetails(); checkAuth() },);
+    useEffect(() => { fetchDetails(); checkAuth() },[]);
 
-    const [formValues, setFormValues] = useState({
-        companyLogo: 'https://png.pngtree.com/png-clipart/20190604/original/pngtree-creative-company-logo-png-image_1197025.jpg',
-        companyName: 'Example Inc.',
-        companyEmail: 'info@example.com',
-        companyMobile: '9876543210',
-        companyAddress: '123 Example Street, Sample City, Country',
-        companyDescription: 'Example Inc. is a leading provider of innovative solutions in the tech industry. We specialize in software development, IT consulting, and digital transformation services.',
-    });
+    const [formValues, setFormValues] = useState({});
 
     const [isEdit, setIsEdit] = useState(false);
 
@@ -50,8 +43,8 @@ export default function CompanyProfile() {
 
     const fetchDetails = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/companyprofile');
-            setFormValues(response.data.companyprofile);
+            const response = await axios.get('http://localhost:8000/api/admin/adminprofile');
+            setFormValues(response.data?.adminprofile[0]);
         } catch (error) {
             console.error('Error fetching plans:', error);
         }
@@ -65,10 +58,12 @@ export default function CompanyProfile() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            if (formValues.companyName === '') {
-                await axios.post('http://localhost:8000/api/companyprofile', formValues);
+            if (!formValues._id) {
+                // If there is no ID, we assume we are creating a new profile.
+                await axios.post('http://localhost:8000/api/admin/adminprofile', formValues);
             } else {
-                await axios.put('http://localhost:8000/api/companyprofile', formValues);
+                // If there is an ID, we update the existing profile.
+                await axios.put(`http://localhost:8000/api/admin/adminprofile/${formValues._id}`, formValues);
             }
             setIsEdit(false);
             fetchDetails();
@@ -99,7 +94,7 @@ export default function CompanyProfile() {
                                 <CardMedia
                                     component="img"
                                     sx={{ width: { xs: '100%', sm: 150 }, height: 'auto' }}
-                                    image={formValues.companyLogo}
+                                    image={formValues?.logo}
                                     alt="Company Logo"
                                 />
                                 <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
@@ -107,23 +102,23 @@ export default function CompanyProfile() {
                                         <Grid container spacing={2}>
                                             <Grid item xs={12}>
                                                 <Typography variant="h6">Company Name</Typography>
-                                                <Typography variant="body1">{formValues.companyName}</Typography>
+                                                <Typography variant="body1">{formValues?.name}</Typography>
                                             </Grid>
                                             <Grid item xs={12}>
                                                 <Typography variant="h6">Email</Typography>
-                                                <Typography variant="body1">{formValues.companyEmail}</Typography>
+                                                <Typography variant="body1">{formValues?.email}</Typography>
                                             </Grid>
                                             <Grid item xs={12}>
                                                 <Typography variant="h6">Mobile Number</Typography>
-                                                <Typography variant="body1">{formValues.companyMobile}</Typography>
+                                                <Typography variant="body1">{formValues?.phone}</Typography>
                                             </Grid>
                                             <Grid item xs={12}>
                                                 <Typography variant="h6">Address</Typography>
-                                                <Typography variant="body1">{formValues.companyAddress}</Typography>
+                                                <Typography variant="body1">{formValues?.address}</Typography>
                                             </Grid>
                                             <Grid item xs={12}>
                                                 <Typography variant="h6">Description</Typography>
-                                                <Typography variant="body1">{formValues.companyDescription}</Typography>
+                                                <Typography variant="body1">{formValues?.description}</Typography>
                                             </Grid>
                                         </Grid>
                                     </CardContent>
@@ -142,48 +137,48 @@ export default function CompanyProfile() {
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sx={{ textAlign: 'center' }}>
                                             <Avatar
-                                                src={formValues.companyLogo}
+                                                src={formValues?.logo}
                                                 sx={{ width: 80, height: 80, margin: '0 auto' }}
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyLogo"
+                                                id="logo"
                                                 label="Company Logo URL"
-                                                name="companyLogo"
-                                                value={formValues.companyLogo}
+                                                name="logo"
+                                                value={formValues?.logo}
                                                 onChange={handleChange}
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyName"
+                                                id="name"
                                                 label="Company Name"
-                                                name="companyName"
-                                                value={formValues.companyName}
+                                                name="name"
+                                                value={formValues?.name}
                                                 onChange={handleChange}
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyEmail"
+                                                id="email"
                                                 label="Company Email"
-                                                name="companyEmail"
+                                                name="email"
                                                 type="email"
-                                                value={formValues.companyEmail}
+                                                value={formValues?.email}
                                                 onChange={handleChange}
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyMobile"
+                                                id="phone"
                                                 label="Company Mobile Number"
-                                                name="companyMobile"
-                                                value={formValues.companyMobile}
+                                                name="phone"
+                                                value={formValues?.phone}
                                                 onChange={handleChange}
                                                 InputProps={{
                                                     startAdornment: <InputAdornment position="start">+91</InputAdornment>,
@@ -193,22 +188,22 @@ export default function CompanyProfile() {
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyAddress"
+                                                id="address"
                                                 label="Company Address"
-                                                name="companyAddress"
-                                                value={formValues.companyAddress}
+                                                name="address"
+                                                value={formValues?.address}
                                                 onChange={handleChange}
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                id="companyDescription"
+                                                id="description"
                                                 label="Company Description"
-                                                name="companyDescription"
+                                                name="description"
                                                 multiline
                                                 rows={4}
-                                                value={formValues.companyDescription}
+                                                value={formValues?.description}
                                                 onChange={handleChange}
                                             />
                                         </Grid>

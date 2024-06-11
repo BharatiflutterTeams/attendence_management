@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -13,103 +13,25 @@ import {
   Menu,
   MenuItem,
   Card,
-  CardContent
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import axios from 'axios';
-import Sidenav from '../components/Sidenav';
-import Navbar from '../components/Navbar';
-import AddIcon from '@mui/icons-material/Add';
-import Autocomplete from '@mui/material/Autocomplete';
-import useAuth from '../Hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode';
+  CardContent,
+} from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import axios from "axios";
+import Sidenav from "../components/Sidenav";
+import Navbar from "../components/Navbar";
+import AddIcon from "@mui/icons-material/Add";
+import Autocomplete from "@mui/material/Autocomplete";
+import useAuth from "../Hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 const drawerWidth = 240;
-
-
+// import styled from "";
 export default function BookingPage() {
-  
   const Navigate = useNavigate();
-  const [bookings, setBookings] = useState([
-    { 
-       _id:1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '123-456-7890',
-      plan: 'Gold',
-      gstNumber: 'GST123456',
-      address: '123 Main St, Springfield',
-      bookingDate: '2024-05-15',
-      adult: '2',
-      children: '1',
-      PaymentMethod: 'Cash',
-      referenceId: '',
-      complementaryPerson: ''
-    },
-    {
-       _id:2,
-      name: 'Alice Smith',
-      email: 'alice.smith@example.com',
-      phone: '987-654-3210',
-      plan: 'Jumbo',
-      gstNumber: 'GST654321',
-      address: '456 Elm St, Shelbyville',
-      bookingDate: '2024-05-18',
-      adult: '3',
-      children: '2',
-      PaymentMethod: 'UPI',
-      referenceId: '',
-      complementaryPerson: ''
-    },
-    {  
-      _id:3,
-      name: 'Bob Johnson',
-      email: 'bob.johnson@example.com',
-      phone: '555-123-4567',
-      plan: 'Gold',
-      gstNumber: 'GST789123',
-      address: '789 Oak St, Ogdenville',
-      bookingDate: '2024-06-01',
-      adult: '1',
-      children: '0',
-      PaymentMethod: 'Card',
-      referenceId: '',
-      complementaryPerson: ''
-    },
-    {   
-      _id:4,
-      name: 'Carol White',
-      email: 'carol.white@example.com',
-      phone: '321-654-9870',
-      plan: 'Jumbo',
-      gstNumber: 'GST321654',
-      address: '101 Pine St, North Haverbrook',
-      bookingDate: '2024-06-05',
-      adult: '2',
-      children: '3',
-      PaymentMethod: 'Cash',
-      referenceId: '',
-      complementaryPerson: ''
-    },
-    {
-       _id:5,
-      name: 'David Brown',
-      email: 'david.brown@example.com',
-      phone: '789-456-1230',
-      plan: 'Gold',
-      gstNumber: 'GST987456',
-      address: '202 Cedar St, Capital City',
-      bookingDate: '2024-06-10',
-      adult: '4',
-      children: '1',
-      PaymentMethod: 'UPI',
-      referenceId: '',
-      complementaryPerson: ''
-    }
-  ]);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [bookings, setBookings] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
   const [rowCount, setRowCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -118,78 +40,92 @@ export default function BookingPage() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentBooking, setCurrentBooking] = useState(null);
   const [newBooking, setNewBooking] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    Plan:'',
-    gstNumber: '',
-    address: '',
-    bookingDate: '',
-    adult: '',
-    children: '',
-    PaymentMethod:'',
-    referenceId:'',
-    complementaryPerson:'',
+    name: "",
+    email: "",
+    phone: "",
+    planId: "",
+    gstNumber: "",
+    address: "",
+    bookingDate: "",
+    adult: "",
+    children: "",
+    PaymentMethod: "",
+    referenceId: "",
+    complementaryPerson: "",
+    adultPrice: "",
+    childrenPrice: "",
   });
 
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  // const [fromDate, setFromDate] = useState(new Date().toISOString().split("T")[0]);
+  // const [toDate, setToDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [plans, setPlans] = useState([]);
 
-  const paymentOptions = ['UPI' , 'Cash', 'Card', 'In-house' , 'Complementary'];
-  const complementaryPersons = ['Bharti sir' , 'Sagar Sir']
-  
+  const paymentOptions = ["UPI", "Cash", "Card", "In-house", "Complementary"];
+  const complementaryPersons = ["Bharti sir", "Sagar Sir"];
+
   useEffect(() => {
     fetchBookings();
-  }, [page, pageSize]);
+    fetchPlans();
+  }, [page, pageSize, selectedDate]);
 
-  useEffect(()=>{
-     checkAuth();
-  },[]);
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
+  const checkAuth = () => {
+    const token = localStorage.getItem("jwtToken");
 
+    if (token && token !== "" && token !== null) {
+      const decoded = jwtDecode(token);
+      const role = decoded.role;
 
-  
-
-   const checkAuth = ()=>{
-       const token = localStorage.getItem('jwtToken')
-
-       if( token  && token !== '' && token !== null){
-       const decoded = jwtDecode(token);
-       const role = decoded.role
-       
       //  if(role !== 'admin' || role !== 'superadmin'){
       //      Navigate('/pagenotfound');
       //  }
-      }
-      else{
-         console.log('Token not Found');
-         Navigate('/login');
-      }
-   }
-
-  const fetchBookings = async () => {
-    try {
-      const response = await axios.get('/api/bookings', {
-        params: { page, pageSize }
-      });
-      setBookings(response.data.bookings);
-      setRowCount(response.data.total);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
+    } else {
+      console.log("Token not Found");
+      Navigate("/login");
     }
   };
 
-  const handleDateFetch=async()=>{
-    try {
-        const responce = await axios.get('/api/bookings',{
-          params:{fromDate,toDate,page,pageSize}
-        });
-        setBookings(responce.data.bookings);
-        setRowCount(responce.data.total);
-    } catch (error) {
-        console.error('Error fetching bookings by date' , error)
+  const fetchBookings = async () => {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      Navigate("/login");
     }
-  }
+    try {
+      const response = await axios.get(
+        "http://localhost:8000/api/admin/booking",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: { page, pageSize, date: selectedDate },
+        }
+      );
+      setBookings(response.data.bookings);
+      console.log("bookings", response.data.bookings);
+      setRowCount(response.data.total);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/api/plan");
+      setPlans(response.data.plan);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+    }
+  };
+
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+  };
 
   const handleOpen = () => {
     setOpen(true);
@@ -201,26 +137,28 @@ export default function BookingPage() {
 
   const handleSave = async () => {
     try {
-      const response = await axios.post('/api/bookings', newBooking);
+      const response = await axios.post("/api/bookings", newBooking);
       setBookings([...bookings, response.data]);
       setRowCount(bookings.length + 1);
       setNewBooking({
-        name: '',
-        email: '',
-        phone: '',
-        Plan :'',
-        gstNumber: '',
-        address: '',
-        bookingDate: '',
-        adult: '',
-        children: '',
-        paymentMethod:'',
-        referenceId: '',
-        complementaryPerson:'',
+        name: "",
+        email: "",
+        phone: "",
+        planId: "",
+        gstNumber: "",
+        address: "",
+        bookingDate: "",
+        adult: "",
+        children: "",
+        paymentMethod: "",
+        referenceId: "",
+        complementaryPerson: "",
+        adultPrice: "",
+        childrenPrice: "",
       });
       handleClose();
     } catch (error) {
-      console.error('Error saving booking:', error);
+      console.error("Error saving booking:", error);
     }
   };
 
@@ -228,13 +166,18 @@ export default function BookingPage() {
     const { name, value } = event.target;
     setNewBooking({ ...newBooking, [name]: value });
   };
+
+  const handlePlanChange = (event, newValue) => {
+    setNewBooking({ ...newBooking, planId: newValue?._id || "" });
+  };
+
   const handlePaymentChange = (event, newValue) => {
     setNewBooking({ ...newBooking, paymentMethod: newValue });
   };
 
-  const handleComplementaryChange=(event, newValue)=>{
-     setNewBooking({...newBooking,complementaryPerson: newValue});
-  }
+  const handleComplementaryChange = (event, newValue) => {
+    setNewBooking({ ...newBooking, complementaryPerson: newValue });
+  };
 
   const handleMenuOpen = (event, booking) => {
     setAnchorEl(event.currentTarget);
@@ -273,20 +216,20 @@ export default function BookingPage() {
 
   const handleEditSave = async () => {
     try {
-      await axios.put(`/api/bookings/${currentBooking._id}`, newBooking);
+      await axios.put(`/api/admin/booking/${currentBooking._id}`, newBooking);
       const updatedBookings = bookings.map((booking) =>
         booking._id === currentBooking._id ? newBooking : booking
       );
       setBookings(updatedBookings);
       handleEditClose();
     } catch (error) {
-      console.error('Error updating booking:', error);
+      console.error("Error updating booking:", error);
     }
   };
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`/api/bookings/${currentBooking._id}`);
+      await axios.delete(`/api/admin/booking/${currentBooking._id}`);
       const updatedBookings = bookings.filter(
         (booking) => booking._id !== currentBooking._id
       );
@@ -294,29 +237,44 @@ export default function BookingPage() {
       setRowCount(updatedBookings.length);
       handleDeleteClose();
     } catch (error) {
-      console.error('Error deleting booking:', error);
+      console.error("Error deleting booking:", error);
     }
   };
 
   const columns = [
-    { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'plan', headerName: 'Plan', width: 150 },
-    { field: 'adult', headerName: 'Adult', width: 100 },
-    { field: 'children', headerName: 'Children', width: 100 },
-    { field: 'bookingDate', headerName: 'Booking Date', width: 150, valueGetter: (params) => new Date(params.value).toLocaleDateString() },
-    { field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
-    
-    { field: 'status', headerName: 'Status', width: 100 },
     {
-      field: 'actions',
-      headerName: 'Actions',
+      field: "userId",
+      headerName: "Name",
+      width: 150,
+      valueGetter: (params) => params?.name || "Unknown",
+    },
+    {
+      field: "planId",
+      headerName: "Plan",
+      width: 400,
+      valueGetter: (params) => params?.title || "Unknown",
+    },
+    { field: "adult", headerName: "Adult", width: 100 },
+    { field: "children", headerName: "Children", width: 100 },
+    {
+      field: "bookingDate",
+      headerName: "Booking Date",
+      width: 150,
+      valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
+    },
+    //{ field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
+
+    //{ field: 'status', headerName: 'Status', width: 100 },
+    {
+      field: "actions",
+      headerName: "Actions",
       width: 100,
       renderCell: (params) => (
         <>
           <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
             <MoreVertIcon />
           </IconButton>
-          <Menu 
+          <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl) && currentBooking === params.row}
             onClose={handleMenuClose}
@@ -329,7 +287,7 @@ export default function BookingPage() {
       ),
     },
   ];
-
+  const today = new Date().toDateString().split("T")[0];
   return (
     <>
       <Navbar />
@@ -345,49 +303,38 @@ export default function BookingPage() {
             width: { sm: `calc(100% - ${drawerWidth}px)` },
           }}
         >
-          <Box sx={{ display: "flex", justifyContent: "flex-end", md: 2 }}>
+          
+
+          {/* Date filter card */}
+          <Card sx={{ mb: 3, mt: 3, display: "flex", alignItems: "center" }}>
+            <CardContent sx={{ display: "flex", alignItems: "center" }}>
+              <Typography variant="h6" sx={{ mr: 2, display: "flex" }}>
+                Select Date to See Bookings:
+              </Typography>
+              <TextField
+                id="date"
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                inputProps={{
+                  min: new Date().toISOString().split("T")[0],
+                }}
+                sx={{ display: "flex" }}
+              />
+             
             <Button
               variant="contained"
-              style={{ background: "#263238", textTransform: "none" }}
+              style={{ background: "#263238", textTransform: "none"  }}
               onClick={handleOpen}
               startIcon={<AddIcon />}
             >
               Add Booking
             </Button>
-          </Box>
-
-          <Card sx={{ mb: 3, mt: 3 }}>
-            <CardContent sx={{ display: "flex", alignItems: "center" }}>
-              <TextField
-                label="From Date"
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{ mr: 2 }}
-              />
-              <TextField
-                label="To Date"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{ mr: 2 }}
-              />
-              <Button
-                variant="contained"
-                style={{ background: "#263238", textTransform: "none" }}
-                onClick={handleDateFetch}
-              >
-                Apply
-              </Button>
+          
             </CardContent>
           </Card>
 
+          {/* ADD booking form */}
           <Dialog open={open} onClose={handleClose}>
             <DialogTitle>Add Booking</DialogTitle>
             <DialogContent>
@@ -424,6 +371,24 @@ export default function BookingPage() {
                 value={newBooking.phone}
                 onChange={handleChange}
               />
+
+              <Autocomplete
+                options={plans}
+                getOptionLabel={(option) => option.title}
+                value={
+                  plans.find((plan) => plan._id === newBooking.planId) || null
+                }
+                onChange={handlePlanChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Plan"
+                    margin="dense"
+                    fullWidth
+                  />
+                )}
+              />
+
               <TextField
                 margin="dense"
                 label="GST Number"
@@ -552,20 +517,30 @@ export default function BookingPage() {
                     />
                   )}
 
-                  <Typography>Name: {currentBooking.name}</Typography>
-                  <Typography>Email: {currentBooking.email}</Typography>
-                  <Typography>Phone: {currentBooking.phone}</Typography>
+                  <Typography>Name: {currentBooking.userId.name}</Typography>
+                  <Typography>Email: {currentBooking.userId.email}</Typography>
+                  <Typography>Phone: {currentBooking.userId.phone}</Typography>
                   <Typography>
-                    GST Number: {currentBooking.gstNumber}
+                    GST Number: {currentBooking.userId.gstNumber}
                   </Typography>
-                  <Typography>Address: {currentBooking.address}</Typography>
+                  <Typography>
+                    Address: {currentBooking.userId.address}
+                  </Typography>
                   <Typography>
                     Booking Date:{" "}
-                    {new Date(currentBooking.bookingDate).toLocaleDateString()}
+                    {new Date(currentBooking.bookingDate).toLocaleDateString(
+                      "en-GB"
+                    )}
                   </Typography>
                   <Typography>Adults: {currentBooking.adult}</Typography>
                   <Typography>Children: {currentBooking.children}</Typography>
-                  <Typography>Plan: {currentBooking.plan}</Typography>
+                  <Typography>Plan: {currentBooking.planId?.title}</Typography>
+                  <Typography>
+                    Adult Price:₹{currentBooking.adultPrice}
+                  </Typography>
+                  <Typography>
+                    Children Price:₹{currentBooking.childrenPrice}
+                  </Typography>
                   <Typography>
                     Payment Mode: {currentBooking.paymentMode}
                   </Typography>
@@ -693,9 +668,9 @@ export default function BookingPage() {
               rows={bookings}
               columns={columns}
               pageSize={pageSize}
-              rowsPerPageOptions={[10, 25, 50]}
-              rowCount={rowCount}
               pagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              rowCount={rowCount}
               paginationMode="server"
               onPageChange={(newPage) => setPage(newPage)}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}

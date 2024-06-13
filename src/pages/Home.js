@@ -15,7 +15,7 @@ function Home() {
   const checkAuth = ()=>{
     const token = localStorage.getItem('jwtToken')
 
-    if(token !== '' || token !== null){
+    if( token && token !== '' && token !== null){
     const decoded = jwtDecode(token);
     const role = decoded.role
     

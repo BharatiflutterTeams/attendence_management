@@ -1,16 +1,23 @@
+// store.js
 import create from 'zustand';
-import {persist} from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
-let appStore = (set) =>({
-    dopen : true,
-    updateOpen:(dopen) => set((state)=>({dopen:dopen}))
+const appStore = (set) => ({
+  dopen: true,
+  updateOpen: (dopen) => set((state) => ({ dopen: dopen })),
 });
 
-//  export const useAuthStore = (set) => ({
-//     token: "",
-//     setToken: (token) => set({ token: String(token) }),
-//     clearToken: () => set({ token: "" }),
-//   });
+const companyProfileStore = (set) => ({
+  companyData: null,
+  setCompanyData: (newData) => set({ companyData: newData }),
+});
 
-appStore = persist(appStore,{name:"my_app_store"});
-export const useAppStore = create(appStore);
+const useAppStore = create(persist(
+  (set) => ({
+    ...appStore(set),
+    ...companyProfileStore(set),
+  }),
+  { name: 'my_app_store' }
+));
+
+export default useAppStore;

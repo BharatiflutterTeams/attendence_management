@@ -15,14 +15,17 @@ import {
   Typography,
   Snackbar,
   Alert,
+   Collapse,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import axios from "axios";
 import Sidenav from "../components/Sidenav";
 import Navbar from "../components/Navbar";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+
 const drawerWidth = 240;
 
 export default function PlansPage() {
@@ -35,20 +38,24 @@ export default function PlansPage() {
     description: "",
     adult_price: "",
     child_price: "",
-    highlights: [],
-    addOn: "",
-    imageLinks: [],
+    activities: [],
+    addOn: [],
+    image_list: [],
     adult_gold_package : [],
     child_gold_package : [],
-    coupons: [],
+    plan_coupon: [],
   });
   const [selectedPlan, setSelectedPlan] = React.useState(null);
+  const [deletePlanId , setDeletePlanId] = React.useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [newLink, setNewLink] = React.useState("");
   const [adultPoint , setAdultPoint] = React.useState("");
   const [childPoint , setChildPoint] = React.useState("");
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  
+  
 
   const highlightsOptions = ["Hiking", "Sightseeing", "Boating"]; // List of activities options
 
@@ -113,12 +120,12 @@ export default function PlansPage() {
         description: "",
         adult_price: "",
         child_price: "",
-        highlights: [],
-        //addOn: "",
-        imageLinks: [],
+        activities: [],
+        addOn: [],
+        image_list: [],
         adult_gold_package:[],
         child_gold_package:[],
-        coupons: [],
+        plan_coupon: [],
       });
       handleClose();
     } catch (error) {
@@ -133,13 +140,24 @@ export default function PlansPage() {
   };
 
   const handleDelete = async (planId) => {
-    try {
-      await axios.delete(`http://localhost:8000/api/plan/${planId}`);
-      fetchPlans();
-    } catch (error) {
-      console.error("Error deleting plan:", error);
-    }
+     setDeletePlanId(planId);
+     setDeleteDialogOpen(true);
   };
+
+   const confirmDelete =async()=>{
+    try {
+        await axios.delete(`http://localhost:8000/api/plan/${deletePlanId}`);
+        fetchPlans();
+        setDeleteDialogOpen(false);
+    } catch (error) {
+      console.log("Error deleting plan" , error);
+    }
+   }
+
+   const handleCancelDelete =()=>{
+    setDeleteDialogOpen(false);
+    setDeletePlanId(null);
+   }
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -159,8 +177,8 @@ export default function PlansPage() {
  }
 
   const handleAddLink = () => {
-    if (newLink && newPlan.imageLinks.length < 5) {
-      setNewPlan({ ...newPlan, imageLinks: [...newPlan.imageLinks, newLink] });
+    if (newLink && newPlan.image_list.length < 5) {
+      setNewPlan({ ...newPlan, image_list: [...newPlan.image_list, newLink] });
       setNewLink("");
     } else {
       setSnackbarMessage("Only 5 image links are allowed");
@@ -191,8 +209,8 @@ export default function PlansPage() {
 
 
   const handleRemoveLink = (index) => {
-    const updatedLinks = newPlan.imageLinks.filter((_, i) => i !== index);
-    setNewPlan({ ...newPlan, imageLinks: updatedLinks });
+    const updatedLinks = newPlan.image_list.filter((_, i) => i !== index);
+    setNewPlan({ ...newPlan, image_list: updatedLinks });
   };
   
   const handleRemoveAdultPoint = (index) => {
@@ -205,11 +223,11 @@ export default function PlansPage() {
   };
 
   const handleHighlightsChange = (event, value) => {
-    setNewPlan({ ...newPlan, highlights: value });
+    setNewPlan({ ...newPlan, activities: value });
   };
 
   const handleCouponsChange = (event, value) => {
-    setNewPlan({ ...newPlan, coupons: value });
+    setNewPlan({ ...newPlan, plan_coupon: value });
   };
 
   const handleSearchChange = (event) => {
@@ -221,6 +239,7 @@ export default function PlansPage() {
     setSnackbarMessage("");
   };
 
+ 
   const filteredPlans = plans.filter(
     (plan) =>
       plan.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -249,15 +268,29 @@ export default function PlansPage() {
               mb: 2,
             }}
           >
-            <TextField
-              label="Search Plans"
-              variant="outlined"
-              value={search}
-              onChange={handleSearchChange}
-            />
+            
+              <TextField
+                label="Search Plans"
+                variant="outlined"
+                size="small"
+                value={search}
+                sx={{width:'35%' , background:'white' }}
+                onChange={handleSearchChange}
+                fullWidth
+                InputProps={{
+                  endAdornment: (
+                    <Box sx={{ position: "absolute", right: 10, top: 8  }}>
+                      <SearchIcon sx={{color:'#867AE9'}} />
+                    </Box>
+                  ),
+                }}
+               
+                 
+              />
+            
             <Button
               variant="contained"
-              style={{ background: "#263238", textTransform: "none" }}
+              style={{ background: "#ffffff",color: '#867AE9', textTransform: "none", fontWeight:'bold' }}
               onClick={handleOpen}
               startIcon={<AddIcon />}
             >
@@ -266,7 +299,7 @@ export default function PlansPage() {
           </Box>
 
           <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>{selectedPlan ? "Edit Plan" : "Add Plan"}</DialogTitle>
+            <DialogTitle sx={{background:'#615EFC', color:"white"}}>{selectedPlan ? "Edit Plan" : "Add Plan"}</DialogTitle>
             <DialogContent>
               <DialogContentText>
                 Fill in the details of the plan.
@@ -312,7 +345,7 @@ export default function PlansPage() {
                 multiple
                 id="highlights"
                 options={highlightsOptions}
-                value={newPlan.highlights}
+                value={newPlan.activities}
                 onChange={handleHighlightsChange}
                 renderInput={(params) => (
                   <TextField
@@ -346,13 +379,16 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddLink}
-                  disabled={newPlan.imageLinks.length >= 5}
+                  disabled={newPlan.image_list.length >= 5}
+                  variant="outlined"
+                   size="small"
+                   sx={{ml:'10px' , mt:'5px'}}
                 >
                   Add Link
                 </Button>
               </Box>
               <Box>
-                {newPlan.imageLinks?.map((link, index) => (
+                {newPlan.image_list?.map((link, index) => (
                   <Box
                     key={index}
                     sx={{
@@ -364,7 +400,8 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {link}
                     </Typography>
-                    <Button onClick={() => handleRemoveLink(index)}>
+                    <Button onClick={() => handleRemoveLink(index)}  variant="outlined"
+                       size="small">
                       Remove
                     </Button>
                   </Box>
@@ -385,6 +422,9 @@ export default function PlansPage() {
                 <Button
                   onClick={handleAddAdultPoint}
                   disabled={newPlan.adult_gold_package.length >= 5}
+                  variant="outlined"
+                   size="small"
+                   sx={{ml:'10px' , mt:'5px'}}
                 >
                   Add Point
                 </Button>
@@ -402,7 +442,8 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {Point}
                     </Typography>
-                    <Button onClick={() => handleRemoveAdultPoint(index)}>
+                    <Button onClick={() => handleRemoveAdultPoint(index)}  variant="outlined"
+                      size="small">
                       Remove
                     </Button>
                   </Box>
@@ -424,6 +465,9 @@ export default function PlansPage() {
                 <Button
                   onClick={handleAddChildPoint}
                   disabled={newPlan.child_gold_package.length >= 5}
+                  variant="outlined"
+                   size="small"
+                   sx={{ml:'10px' , mt:'5px'}}
                 >
                   Add Point
                 </Button>
@@ -441,7 +485,8 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {Point}
                     </Typography>
-                    <Button onClick={() => handleRemoveChildPoint(index)}>
+                    <Button onClick={() => handleRemoveChildPoint(index)}  variant="outlined"
+                       size="small">
                       Remove
                     </Button>
                   </Box>
@@ -453,7 +498,7 @@ export default function PlansPage() {
                 id="coupons"
                 options={coupons}
                 getOptionLabel={(option) => option.coupon_code}
-                value={newPlan.coupons}
+                value={newPlan.plan_coupon}
                 onChange={handleCouponsChange}
                 renderInput={(params) => (
                   <TextField
@@ -467,10 +512,12 @@ export default function PlansPage() {
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleClose} color="primary">
+              <Button onClick={handleClose} variant="contained"
+              style={{ background: "#686D76", textTransform: "none" }}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} color="primary">
+              <Button onClick={handleSave} variant="contained"
+              style={{ background: "#615EFC", textTransform: "none" }}>
                 Save
               </Button>
             </DialogActions>
@@ -490,64 +537,91 @@ export default function PlansPage() {
             </Alert>
           </Snackbar>
 
+          {/* Delete confirmation Dialog */}
+           <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+              <DialogTitle>Confirm Delete</DialogTitle>
+              <DialogContent>
+                 <DialogContentText>
+                    Are you sure you want to delete this plan?
+                 </DialogContentText>
+              </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete}>Cancel</Button>
+                    <Button onClick={confirmDelete} color="error">Delete</Button>
+                </DialogActions>
+           </Dialog>
+
           <Box sx={{ marginTop: 2 }}>
             {filteredPlans.map((plan, index) => (
-              <Card
-                key={index}
+                <Card
+                key={plan._id}
                 variant="outlined"
                 sx={{
                   width: "100%",
                   m: 2,
                   borderRadius: "8px",
                   display: "flex",
-                  background: "#EEF7FF",
+                  background: "#FFFFFF",
+                  boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.16)",
                 }}
               >
-                <CardMedia
-                  component="img"
-                  sx={{ width: 200 }}
-                  image={
-                    "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?cs=srgb&dl=pexels-thorsten-technoman-109353-338504.jpg&fm=jpg"
-                  }
-                  alt="Card image"
-                />
-                <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
-                  <CardContent>
-                    <Typography variant="h5" component="div">
+                <Box sx={{ display: "flex", flexDirection: "column", width: 200 }}>
+                  <CardMedia
+                    component="img"
+                    sx={{ width: "100%", height: "100%", borderRadius: "8px 0 0 8px", objectFit: 'cover' }}
+                    image={
+                      plan.image_list[0]
+                        ? plan.image_list[0]
+                        : "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?cs=srgb&dl=pexels-thorsten-technoman-109353-338504.jpg&fm=jpg"
+                    }
+                    alt="Card image"
+                  />
+                </Box>
+                <Box sx={{ display: "flex", flexDirection: "column", flex: 1, p: 2 }}>
+                  <CardContent sx={{ p: 0, flex: 1 }}>
+                    <Typography variant="h5" component="div" sx={{ mb: 2, fontWeight: 'bold', color: "#37474F" }}>
                       {plan.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Description: {plan.description}
-                      <br />
-                      Adult Price: ${plan.adult_price}
-                      <br />
-                      Child Price: ${plan.child_price}
-                      <br />
-                      Highlights: {plan.highlights.join(", ")}
-                      <br />
-                      {/* Add-On: {plan.addOn}<br /> */}
-                      Image Links: {plan.imageLinks.join(", ")}
-                      <br />
-                      Coupons:{" "}
-                      {plan.coupons
-                        .map((coupon) => coupon.coupon_code)
-                        .join(", ")}
-                      <br />
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {plan.description}
                     </Typography>
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Adult Price:</strong> ₹{plan.adult_price}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Child Price:</strong> ₹{plan.child_price}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Highlights:</strong> {plan.activities.join(", ")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Image Links:</strong> {plan.image_list.join(", ")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Coupons:</strong> {plan.plan_coupon.map((coupon) => coupon.coupon_code).join(", ")}
+                      </Typography>
+                    </Box>
                   </CardContent>
-                  <CardActions>
-                    <Button size="small" onClick={() => handleEdit(plan)}>
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleEdit(plan)}
+                      sx={{ mr: 1 }}
+                      variant="text"
+                      color="primary"
+                    >
                       Edit
                     </Button>
                     <Button
                       size="small"
-                      onClick={() => {
-                        handleDelete(plan._id);
-                      }}
+                      onClick={() => handleDelete(plan._id)}
+                      variant="text"
+                      color="secondary"
                     >
                       Delete
                     </Button>
-                  </CardActions>
+                  </Box>
                 </Box>
               </Card>
             ))}

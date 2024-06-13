@@ -14,6 +14,8 @@ import {
   MenuItem,
   Card,
   CardContent,
+  Divider,
+  Table, TableBody, TableCell, TableContainer, TableRow, Paper,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -25,8 +27,9 @@ import Autocomplete from "@mui/material/Autocomplete";
 import useAuth from "../Hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import styles from './BookingList.module.css';
 const drawerWidth = 240;
-// import styled from "";
+
 export default function BookingPage() {
   const Navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -245,13 +248,13 @@ export default function BookingPage() {
     {
       field: "userId",
       headerName: "Name",
-      width: 150,
+      width: 200,
       valueGetter: (params) => params?.name || "Unknown",
     },
     {
       field: "planId",
       headerName: "Plan",
-      width: 400,
+      width: 500,
       valueGetter: (params) => params?.title || "Unknown",
     },
     { field: "adult", headerName: "Adult", width: 100 },
@@ -291,7 +294,7 @@ export default function BookingPage() {
   return (
     <>
       <Navbar />
-      <Box sx={{ padding: 2, display: "flex" }}>
+      <Box sx={{ display: "flex" }}>
         <Sidenav />
 
         <Box
@@ -303,40 +306,46 @@ export default function BookingPage() {
             width: { sm: `calc(100% - ${drawerWidth}px)` },
           }}
         >
-          
-
           {/* Date filter card */}
-          <Card sx={{ mb: 3, mt: 3, display: "flex", alignItems: "center" }}>
-            <CardContent sx={{ display: "flex", alignItems: "center" }}>
-              <Typography variant="h6" sx={{ mr: 2, display: "flex" }}>
-                Select Date to See Bookings:
-              </Typography>
-              <TextField
-                id="date"
-                type="date"
-                value={selectedDate}
-                onChange={handleDateChange}
-                inputProps={{
-                  min: new Date().toISOString().split("T")[0],
-                }}
-                sx={{ display: "flex" }}
-              />
-             
-            <Button
-              variant="contained"
-              style={{ background: "#263238", textTransform: "none"  }}
-              onClick={handleOpen}
-              startIcon={<AddIcon />}
+          <Box >
+            <CardContent
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
             >
-              Add Booking
-            </Button>
-          
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {/* <Typography variant="h6" sx={{ mr: 2 }}>
+                  Date:
+                </Typography> */}
+                <TextField
+                  id="date"
+                  type="date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  inputProps={{
+                    min: new Date().toISOString().split("T")[0],
+                  }}
+                  size="small"
+                />
+              </div>
+              <Button
+                variant="contained"
+                style={{ background: "#ffffff",color: '#867AE9', textTransform: "none", fontWeight:'bold' }}
+                onClick={handleOpen}
+                startIcon={<AddIcon />}
+              >
+                Add Booking
+              </Button>
             </CardContent>
-          </Card>
+          </Box>
 
           {/* ADD booking form */}
           <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Add Booking</DialogTitle>
+            <DialogTitle sx={{ background: "#615EFC", color: "white" }}>
+              Add Booking
+            </DialogTitle>
             <DialogContent>
               <DialogContentText>
                 Fill in the details of the booking.
@@ -419,6 +428,9 @@ export default function BookingPage() {
                 InputLabelProps={{
                   shrink: true,
                 }}
+                inputProps={{
+                  min: new Date().toISOString().split("T")[0],
+                }}
               />
               <TextField
                 margin="dense"
@@ -488,72 +500,139 @@ export default function BookingPage() {
             </DialogContent>
 
             <DialogActions>
-              <Button onClick={handleClose} color="primary">
+              <Button
+                onClick={handleClose}
+                variant="contained"
+                style={{ background: "#686D76", textTransform: "none" }}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave} color="primary">
+              <Button
+                onClick={handleSave}
+                variant="contained"
+                style={{ background: "#615EFC", textTransform: "none" }}
+              >
                 Save
               </Button>
             </DialogActions>
           </Dialog>
+     
 
-          <Dialog open={viewOpen} onClose={handleViewClose}>
-            <DialogTitle>View Booking Details</DialogTitle>
-            <DialogContent>
-              {currentBooking && (
-                <>
-                  {currentBooking.plan && (
-                    <div
-                      style={{
-                        height: "10px",
-                        backgroundColor:
-                          currentBooking.plan === "Gold"
-                            ? "yellow"
-                            : currentBooking.plan === "Jumbo"
-                            ? "orange"
-                            : "transparent",
-                        marginBottom: "10px",
-                      }}
-                    />
-                  )}
+       {/* view booking section */}
+          <Dialog open={viewOpen} onClose={handleViewClose} fullWidth maxWidth="sm">
+    <DialogTitle style={{ backgroundColor: "#263238", color: "white" }}>
+      View Booking Details
+    </DialogTitle>
+    <DialogContent>
+      {currentBooking && (
+        <>
+          {currentBooking.plan && (
+            <div
+              style={{
+                height: "10px",
+                backgroundColor:
+                  currentBooking.plan === "Gold"
+                    ? "yellow"
+                    : currentBooking.plan === "Jumbo"
+                    ? "orange"
+                    : "transparent",
+                marginBottom: "10px",
+              }}
+            />
+          )}
 
-                  <Typography>Name: {currentBooking.userId.name}</Typography>
-                  <Typography>Email: {currentBooking.userId.email}</Typography>
-                  <Typography>Phone: {currentBooking.userId.phone}</Typography>
-                  <Typography>
-                    GST Number: {currentBooking.userId.gstNumber}
-                  </Typography>
-                  <Typography>
-                    Address: {currentBooking.userId.address}
-                  </Typography>
-                  <Typography>
-                    Booking Date:{" "}
-                    {new Date(currentBooking.bookingDate).toLocaleDateString(
-                      "en-GB"
-                    )}
-                  </Typography>
-                  <Typography>Adults: {currentBooking.adult}</Typography>
-                  <Typography>Children: {currentBooking.children}</Typography>
-                  <Typography>Plan: {currentBooking.planId?.title}</Typography>
-                  <Typography>
-                    Adult Price:₹{currentBooking.adultPrice}
-                  </Typography>
-                  <Typography>
-                    Children Price:₹{currentBooking.childrenPrice}
-                  </Typography>
-                  <Typography>
-                    Payment Mode: {currentBooking.paymentMode}
-                  </Typography>
-                  <Typography>Status: {currentBooking.status}</Typography>
-                </>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleViewClose} color="primary">
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
+            Personal Information
+          </Typography>
+          <TableContainer component={Paper} style={{ marginBottom: "20px" }}>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Name</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.name}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Email</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.userId.email}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Phone</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.phone}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>GST Number</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.userId.gstNumber}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Address</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.address}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
+            Booking Information
+          </Typography>
+          <TableContainer component={Paper} style={{ marginBottom: "20px" }}>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Booking Date</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                    {new Date(currentBooking.bookingDate).toLocaleDateString("en-GB")}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Adults</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.adult}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Children</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.children}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Plan</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.planId?.title}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Adult Price</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>₹{currentBooking.adultPrice}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Children Price</TableCell>
+                  <TableCell  style={{ backgroundColor: "#f5f5f5" }}>₹{currentBooking.childrenPrice}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
+            Payment & Status
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Payment Mode</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.paymentMode}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Status</TableCell>
+                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.status}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={handleViewClose} variant="contained" style={{ backgroundColor: "#263238", color: "white" }}>
+        Close
+      </Button>
+    </DialogActions>
+  </Dialog>
 
           <Dialog open={editOpen} onClose={handleEditClose}>
             <DialogTitle>Edit Booking</DialogTitle>
@@ -663,7 +742,7 @@ export default function BookingPage() {
             </DialogActions>
           </Dialog>
 
-          <Box sx={{ height: 400, width: "100%", marginTop: 2 }}>
+          <Box sx={{ height: '69vh', width: "100%" }}>
             <DataGrid
               rows={bookings}
               columns={columns}
@@ -675,7 +754,7 @@ export default function BookingPage() {
               onPageChange={(newPage) => setPage(newPage)}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               getRowId={(row) => row._id}
-              sx={{ background: "#EEEEEE" }}
+              sx={{ background: "#f7f5fa" }}
             />
           </Box>
         </Box>

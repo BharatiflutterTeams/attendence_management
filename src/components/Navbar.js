@@ -15,7 +15,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
-import {useAppStore} from '../appStore'
+import useAppStore from '../appStore'
 import { useNavigate } from 'react-router-dom';
 //import { useAuthStore } from '../appStore';
 
@@ -32,6 +32,7 @@ const AppBar = styled(MuiAppBar, {
 
 
 export default function Navbar() {
+  const companyData = useAppStore(state=>state.companyData);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
   const updateOpen = useAppStore((state)=>state.updateOpen);
@@ -132,31 +133,35 @@ const handleLogout=()=>{
 
   return (
     <Box sx={{ flexGrow: 1}}>
-      <AppBar position="fixed" sx={{backgroundColor:"#ffffff"}}>
+      <AppBar position="fixed" sx={{backgroundColor:"#867AE9"}}>
         <Toolbar>
           <IconButton
             size="large"
             edge="start"
-            color="black"
+            color="white"
+            
             aria-label="open drawer"
-            sx={{ mr: 2 }}
+            sx={{ mr: 2 , color : 'white'}}
             onClick={()=>{updateOpen(!dopen)}}
           >
             <MenuIcon />
           </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center',  }}>
+      <img src={companyData.logo} alt="Company Logo" width="30" height="30" style={{ borderRadius: '50%', marginRight: '12px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }} />
+           </Box>
           <Typography
             variant="h6"
             noWrap
             component="div"
-            sx={{ display: { xs: 'none', sm: 'block', color:'black' } }}
+            sx={{ display: { xs: 'none', sm: 'block', color:'white' } }}
           >
-            Bharti-Resort
+            {companyData.name}
           </Typography>
           
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             
-            <IconButton
+            {/* <IconButton
               size="large"
               aria-label="show 17 new notifications"
               color="black"
@@ -164,7 +169,7 @@ const handleLogout=()=>{
               <Badge badgeContent={17} color="error">
                 <NotificationsIcon />
               </Badge>
-            </IconButton>
+            </IconButton> */}
             <IconButton
               size="large"
               edge="end"
@@ -172,7 +177,7 @@ const handleLogout=()=>{
               aria-controls={menuId}
               aria-haspopup="true"
               onClick={handleProfileMenuOpen}
-              color="black"
+              sx={{color:'white'}}
             >
               <AccountCircle />
             </IconButton>

@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 import List from '@mui/material/List';
 import CssBaseline from '@mui/material/CssBaseline';
-
+import { Typography } from '@mui/material';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 
@@ -22,9 +22,10 @@ import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {useNavigate} from 'react-router-dom';
-import {useAppStore} from '../appStore'
+import useAppStore from '../appStore'
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import { jwtDecode } from 'jwt-decode';
+import { Link } from 'react-router-dom';
 
 
 const drawerWidth = 240;
@@ -79,6 +80,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 );
 
 export default function Sidenav() {
+  const companyData = useAppStore(state=>state.companyData);
   const theme = useTheme();
   const [isSuperAdmin , setisSuperAdmin] = useState(false);
   //const [open, setOpen] = React.useState(true);
@@ -105,155 +107,229 @@ export default function Sidenav() {
    
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      
-      <Drawer variant="permanent" open={open}  PaperProps={{
-    sx: {
-      backgroundColor: "#27374D",
-       color:'white'
-    }
-  }}>
+
+      <Drawer
+        variant="permanent"
+        open={open}
+        PaperProps={{
+          sx: {
+            backgroundColor: "#ffffff",
+            color: "black",
+          },
+        }}
+      >
         <DrawerHeader>
-          <IconButton >
-            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          <IconButton>
+            {theme.direction === "rtl" ? (
+              <ChevronRightIcon />
+            ) : (
+              <ChevronLeftIcon />
+            )}
           </IconButton>
         </DrawerHeader>
         <Divider />
+
+        {/* Company Data Section */}
+{open && companyData && (
+  <Box sx={{ px: 2, py: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <img src={companyData.logo} alt="Company Logo" width="50" height="50" style={{ borderRadius: '50%', marginRight: '12px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }} />
+      <Box>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>{companyData.name}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Link to="/companyprofile" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Typography variant="body2" color="primary" sx={{ display: 'flex', alignItems: 'center' ,  }}>
+              Profile 
+              <Box component="span" sx={{ ml: 0, mt:1 }}>
+                <ChevronRightIcon style={{ fontSize: '1rem' }} />
+              </Box>
+            </Typography>
+          </Link>
+        </Box>
+      </Box>
+    </Box>
+    <Divider/>
+  </Box>
+)}
+
+
         <List>
-          
-            <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/')}}>
-              <ListItemButton
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
                 sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
                 }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
-                <DashboardIcon style={{ fill: '#ffffff' }}/>
-                </ListItemIcon>
-                <ListItemText primary="Dashboard" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
+                <DashboardIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Dashboard"
+                sx={{ opacity: open ? 1 : 0 }}
+              />
+            </ListItemButton>
+          </ListItem>
 
-            <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/bookings')}}>
-              <ListItemButton
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/bookings");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
                 sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
                 }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                     
-                  }}
-                >
-                 <EventAvailableIcon style={{ fill: '#ffffff' }}/>
-                </ListItemIcon>
-                <ListItemText primary="Bookings" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
-             
-            <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/plans')}}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
-                 <LocalOfferIcon style={{ fill: '#ffffff' }}/>
-                </ListItemIcon>
-                <ListItemText primary="Plans" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
-             
-            <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/coupons')}}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
-                 <ConfirmationNumberIcon style={{ fill: '#ffffff' }}/>
-                </ListItemIcon>
-                <ListItemText primary="Coupons" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
+                <EventAvailableIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText primary="Bookings" sx={{ opacity: open ? 1 : 0 }} />
+            </ListItemButton>
+          </ListItem>
 
-            <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/companyprofile')}}>
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/plans");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <LocalOfferIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText primary="Plans" sx={{ opacity: open ? 1 : 0 }} />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/coupons");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <ConfirmationNumberIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText primary="Coupons" sx={{ opacity: open ? 1 : 0 }} />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/companyprofile");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <CorporateFareIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Company Profile"
+                sx={{ opacity: open ? 1 : 0 }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          {isSuperAdmin && (
+            <ListItem
+              disablePadding
+              sx={{ display: "block" }}
+              onClick={() => {
+                navigate("/approval");
+              }}
+            >
               <ListItemButton
                 sx={{
                   minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
+                  justifyContent: open ? "initial" : "center",
                   px: 2.5,
                 }}
               >
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
+                    mr: open ? 3 : "auto",
+                    justifyContent: "center",
                   }}
                 >
-                 <CorporateFareIcon style={{ fill: '#ffffff' }}/>
+                  <CorporateFareIcon style={{ fill: "#867AE9" }} />
                 </ListItemIcon>
-                <ListItemText primary="Company Profile" sx={{ opacity: open ? 1 : 0 }} />
+                <ListItemText
+                  primary="Approval"
+                  sx={{ opacity: open ? 1 : 0 }}
+                />
               </ListItemButton>
             </ListItem>
-              
-
-              
-             { isSuperAdmin && <ListItem  disablePadding sx={{ display: 'block' }} onClick={()=>{navigate('/approval')}}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
-                 <CorporateFareIcon style={{ fill: '#ffffff' }}/>
-                </ListItemIcon>
-                <ListItemText primary="Approval" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>}
+          )}
         </List>
-       
       </Drawer>
-     
     </Box>
   );
 }

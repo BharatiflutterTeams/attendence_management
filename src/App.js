@@ -21,7 +21,7 @@ import {ROLES} from './config/roles'
 const App = () => {
   return (
 
-     <Box sx={{}}>
+     <Box sx={{background:'#EEF1FF'}}>
       <Routes>
         
        

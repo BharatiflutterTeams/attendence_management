@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import axios from 'axios';
+import endpoints from '../Endpoints/endpoint';
 import Sidenav from '../components/Sidenav';
 import Navbar from '../components/Navbar';
 import AddIcon from '@mui/icons-material/Add';
@@ -57,7 +58,7 @@ export default function CouponsPage() {
 
   const fetchCoupons = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/coupons');
+      const response = await axios.get(`${endpoints.serverBaseURL}/api/coupons`);
       setCoupons(response.data.coupons);
     } catch (error) {
       console.error('Error fetching coupons:', error);
@@ -76,9 +77,9 @@ export default function CouponsPage() {
   const handleSave = async () => {
     try {
       if (selectedCoupon) {
-        await axios.put(`http://localhost:8000/api/coupons/${selectedCoupon._id}`, newCoupon);
+        await axios.put(`${endpoints.serverBaseURL}/api/coupons/${selectedCoupon._id}`, newCoupon);
       } else {
-        await axios.post('http://localhost:8000/api/coupons', newCoupon);
+        await axios.post('${endpoints.serverBaseURL}/api/coupons', newCoupon);
       }
       fetchCoupons();
       setNewCoupon({
@@ -103,7 +104,7 @@ export default function CouponsPage() {
 
   const handleDelete = async (couponId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/coupons/${couponId}`);
+      await axios.delete(`${endpoints.serverBaseURL}/api/coupons/${couponId}`);
       fetchCoupons();
     } catch (error) {
       console.error('Error deleting coupon:', error);

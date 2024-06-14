@@ -25,6 +25,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import endpoints from "../Endpoints/endpoint";
 
 const drawerWidth = 240;
 
@@ -79,7 +80,7 @@ export default function PlansPage() {
 
   const fetchPlans = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/plan");
+      const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
       setPlans(response.data.plan);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -88,7 +89,7 @@ export default function PlansPage() {
 
   const fetchCoupons = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/coupons");
+      const response = await axios.get(`${endpoints.serverBaseURL}/api/coupons`);
       setCoupons(response.data.coupons);
     } catch (error) {
       console.error("Error fetching coupons:", error);
@@ -108,11 +109,11 @@ export default function PlansPage() {
     try {
       if (selectedPlan) {
         await axios.put(
-          `http://localhost:8000/api/plan/${selectedPlan._id}`,
+          `${endpoints.serverBaseURL}/api/plan/${selectedPlan._id}`,
           newPlan
         );
       } else {
-        await axios.post("http://localhost:8000/api/plan", newPlan);
+        await axios.post(`${endpoints.serverBaseURL}/api/plan`, newPlan);
       }
       fetchPlans();
       setNewPlan({
@@ -146,7 +147,7 @@ export default function PlansPage() {
 
    const confirmDelete =async()=>{
     try {
-        await axios.delete(`http://localhost:8000/api/plan/${deletePlanId}`);
+        await axios.delete(`${endpoints.serverBaseURL}/api/plan/${deletePlanId}`);
         fetchPlans();
         setDeleteDialogOpen(false);
     } catch (error) {

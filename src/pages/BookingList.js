@@ -20,6 +20,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import axios from "axios";
+import endpoints from "../Endpoints/endpoint";
 import Sidenav from "../components/Sidenav";
 import Navbar from "../components/Navbar";
 import AddIcon from "@mui/icons-material/Add";
@@ -101,7 +102,7 @@ export default function BookingPage() {
     }
     try {
       const response = await axios.get(
-        "http://localhost:8000/api/admin/booking",
+        `${endpoints.serverBaseURL}/api/admin/booking`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -119,7 +120,7 @@ export default function BookingPage() {
 
   const fetchPlans = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/plan");
+      const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
       setPlans(response.data.plan);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -140,7 +141,7 @@ export default function BookingPage() {
 
   const handleSave = async () => {
     try {
-      const response = await axios.post("/api/bookings", newBooking);
+      const response = await axios.post(`${endpoints.serverBaseURL}/api/bookings`, newBooking);
       setBookings([...bookings, response.data]);
       setRowCount(bookings.length + 1);
       setNewBooking({
@@ -219,7 +220,7 @@ export default function BookingPage() {
 
   const handleEditSave = async () => {
     try {
-      await axios.put(`/api/admin/booking/${currentBooking._id}`, newBooking);
+      await axios.put(`${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`, newBooking);
       const updatedBookings = bookings.map((booking) =>
         booking._id === currentBooking._id ? newBooking : booking
       );
@@ -232,7 +233,7 @@ export default function BookingPage() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`/api/admin/booking/${currentBooking._id}`);
+      await axios.delete(`${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`);
       const updatedBookings = bookings.filter(
         (booking) => booking._id !== currentBooking._id
       );

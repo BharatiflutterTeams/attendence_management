@@ -16,18 +16,19 @@ import {
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {jwtDecode} from 'jwt-decode';
-import useAppStore from '../appStore';
+import  endpoints from '../Endpoints/endpoint'
+//import useAppStore from '../appStore';
 
 const drawerWidth = 240;
 
 export default function CompanyProfile() {
   const navigate = useNavigate();
-  const setCompanyData = useAppStore((state) => state.setCompanyData);
+  //const setCompanyData = useAppStore((state) => state.setCompanyData);
 
   useEffect(() => {
     fetchDetails();
     checkAuth();
-  }, [setCompanyData]);
+  }, []);
 
   const [formValues, setFormValues] = useState({});
   const [isEdit, setIsEdit] = useState(false);
@@ -45,9 +46,9 @@ export default function CompanyProfile() {
 
   const fetchDetails = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/admin/adminprofile');
+      const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/adminprofile`);
       setFormValues(response.data?.adminprofile[0]);
-      setCompanyData(response.data?.adminprofile[0]);
+      //setCompanyData(response.data?.adminprofile[0]);
     } catch (error) {
       console.error('Error fetching plans:', error);
     }
@@ -62,9 +63,9 @@ export default function CompanyProfile() {
     event.preventDefault();
     try {
       if (!formValues._id) {
-        await axios.post('http://localhost:8000/api/admin/adminprofile', formValues);
+        await axios.post(`${endpoints.serverBaseURL}/api/admin/adminprofile`, formValues);
       } else {
-        await axios.put(`http://localhost:8000/api/admin/adminprofile/${formValues._id}`, formValues);
+        await axios.put(`${endpoints.serverBaseURL}/api/admin/adminprofile/${formValues._id}`, formValues);
       }
       setIsEdit(false);
       fetchDetails();

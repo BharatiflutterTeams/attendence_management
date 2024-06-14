@@ -4,10 +4,13 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import useAppStore from '../appStore'
+import endpoints from '../Endpoints/endpoint';
 //import { useAuthStore } from '../appStore';
 
 
 const AdminLogin = () => {
+  const companyData = useAppStore(state=>state.companyData);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +20,7 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8000/api/admin/login', {
+      const response = await axios.post(`${endpoints.serverBaseURL}/api/admin/login`, {
         email,
         password,
       });
@@ -71,8 +74,9 @@ const AdminLogin = () => {
             {/* <Typography variant="h5" component="h3" gutterBottom align="center" sx={{margin:2}}>
               Bharti-Resort
             </Typography> */}
+            
             <Typography variant="h6" component="h2" gutterBottom align="center" sx={{margin:3}}>
-              Welcome to Bharti-Resort
+              Welcome to {companyData?.name}
             </Typography>
             <Card variant="outlined" sx={{ padding: 4 }}>
               <Typography variant="h6" component="h3" gutterBottom align="center">

@@ -10,6 +10,7 @@ import {  Button, Dialog, DialogTitle, DialogContent, DialogActions} from '@mui/
 import { DataGrid } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import endpoints from '../Endpoints/endpoint';
 const drawerWidth = 240;
 
 export default function ApprovalPage() {
@@ -93,7 +94,7 @@ export default function ApprovalPage() {
       checkAuth();
       const fetchBookings = async () => {
         try {
-          const response = await axios.get('/api/bookings');
+          const response = await axios.get(`${endpoints.serverBaseURL}/api/bookings`);
          const complementaryBookings = response.data.filter(booking => booking.paymentMethod === 'complementary');
         setBookings(complementaryBookings);
         } catch (error) {

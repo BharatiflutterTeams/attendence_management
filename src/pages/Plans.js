@@ -45,16 +45,19 @@ export default function PlansPage() {
     adult_gold_package : [],
     child_gold_package : [],
     plan_coupon: [],
+    //notes:""
   });
   const [selectedPlan, setSelectedPlan] = React.useState(null);
   const [deletePlanId , setDeletePlanId] = React.useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [newLink, setNewLink] = React.useState("");
+  const [newHighlight, setNewHighlight] = React.useState("");
   const [adultPoint , setAdultPoint] = React.useState("");
   const [childPoint , setChildPoint] = React.useState("");
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  const [errors, setErrors] = React.useState({});
   
   
 
@@ -67,11 +70,15 @@ export default function PlansPage() {
   }, []);
 
   const checkAuth = () => {
-    const token = localStorage.getItem("jwtToken");
+    const token = sessionStorage.getItem("jwtToken");
 
     if (token && token !== "" && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
+      if(role == 'checker'){
+        Navigate('/scanner');
+      }
+      
     } else {
       console.log("Token not Found");
       Navigate("/login");
@@ -127,6 +134,7 @@ export default function PlansPage() {
         adult_gold_package:[],
         child_gold_package:[],
         plan_coupon: [],
+        //notes:""
       });
       handleClose();
     } catch (error) {
@@ -169,6 +177,10 @@ export default function PlansPage() {
     setNewLink(event.target.value);
   };
 
+  const handleHighlightChange = (event) => {
+    setNewHighlight(event.target.value);
+  };
+
   const handleAdultGoldChange = (event)=>{
      setAdultPoint(event.target.value);
   }
@@ -187,6 +199,15 @@ export default function PlansPage() {
     }
   };
 
+  const handleAddHighlight = () => {
+    if (newHighlight && newPlan.activities.length < 5) {
+      setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
+      setNewHighlight("");
+    } else {
+      setSnackbarMessage("Only 5 image links are allowed");
+      setSnackbarOpen(true);
+    }
+  };
   const handleAddAdultPoint = ()=>{
     if (adultPoint && newPlan.adult_gold_package.length < 5) {
       setNewPlan({ ...newPlan, adult_gold_package: [...newPlan.adult_gold_package, adultPoint] });
@@ -214,6 +235,12 @@ export default function PlansPage() {
     setNewPlan({ ...newPlan, image_list: updatedLinks });
   };
   
+  const handleRemoveHighlights = (index) => {
+    const updatedHighlights = newPlan.activities.filter((_, i) => i !== index);
+    setNewPlan({ ...newPlan, activities: updatedHighlights });
+  };
+  
+
   const handleRemoveAdultPoint = (index) => {
     const updatedPoints = newPlan.adult_gold_package.filter((_, i) => i !== index);
     setNewPlan({ ...newPlan, adult_gold_package: updatedPoints });
@@ -223,9 +250,7 @@ export default function PlansPage() {
     setNewPlan({ ...newPlan, child_gold_package: updatedPoints });
   };
 
-  const handleHighlightsChange = (event, value) => {
-    setNewPlan({ ...newPlan, activities: value });
-  };
+
 
   const handleCouponsChange = (event, value) => {
     setNewPlan({ ...newPlan, plan_coupon: value });
@@ -239,6 +264,41 @@ export default function PlansPage() {
     setSnackbarOpen(false);
     setSnackbarMessage("");
   };
+
+  //*******form validation********** */
+
+  const validate = () => {
+    const newErrors = {};
+    if (!newPlan.title) newErrors.title = 'Title is required';
+    if (!newPlan.description || newPlan.description.length > 200) {
+      newErrors.description = 'Description is required and should be less than 200 characters';
+    }
+    if (!newPlan.adult_price || isNaN(newPlan.adult_price)) {
+      newErrors.adult_price = 'Valid adult price is required';
+    }
+    if (!newPlan.child_price || isNaN(newPlan.child_price)) {
+      newErrors.child_price = 'Valid child price is required';
+    }
+    if (newPlan.image_list.length === 0) {
+      newErrors.image_list = 'At least one image link is required';
+    }
+    if (newPlan.adult_gold_package.length === 0) {
+      newErrors.adult_gold_package = 'At least one adult gold package point is required';
+    }
+    if (newPlan.child_gold_package.length === 0) {
+      newErrors.child_gold_package = 'At least one child gold package point is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveClick = () => {
+    if (validate()) {
+      handleSave();
+    }
+  };
+
+  //************************/
 
  
   const filteredPlans = plans.filter(
@@ -307,6 +367,7 @@ export default function PlansPage() {
               </DialogContentText>
               <TextField
                 autoFocus
+                required
                 margin="dense"
                 label="Title"
                 fullWidth
@@ -314,15 +375,21 @@ export default function PlansPage() {
                 name="title"
                 value={newPlan.title}
                 onChange={handleChange}
+                error={!!errors.title}
+                helperText={errors.title}
               />
               <TextField
                 margin="dense"
                 label="Description"
+                required
                 fullWidth
                 variant="outlined"
                 name="description"
                 value={newPlan.description}
                 onChange={handleChange}
+                error= {!!errors.description}
+                helperText={errors.description}
+                inputProps={{ maxLength: 200 }}
               />
               <TextField
                 margin="dense"
@@ -332,6 +399,10 @@ export default function PlansPage() {
                 name="adult_price"
                 value={newPlan.adult_price}
                 onChange={handleChange}
+                required
+                error={!!errors.adult_price}
+                helperText={errors.adult_price}
+                type="number"
               />
               <TextField
                 margin="dense"
@@ -341,24 +412,13 @@ export default function PlansPage() {
                 name="child_price"
                 value={newPlan.child_price}
                 onChange={handleChange}
+                required
+                error={!!errors.child_price}
+                helperText={errors.child_price}
+                type="number"
               />
-              <Autocomplete
-                multiple
-                id="highlights"
-                options={highlightsOptions}
-                value={newPlan.activities}
-                onChange={handleHighlightsChange}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    margin="dense"
-                    label="Highlights"
-                    fullWidth
-                    variant="outlined"
-                  />
-                )}
-              />
-              {/* <TextField
+             
+              <TextField
                 margin="dense"
                 label="Add-On"
                 fullWidth
@@ -366,7 +426,61 @@ export default function PlansPage() {
                 name="addOn"
                 value={newPlan.addOn}
                 onChange={handleChange}
+              />
+
+                {/* <TextField
+                autoFocus
+                margin="dense"
+                label="Notes"
+                fullWidth
+                variant="outlined"
+                name="notes"
+                value={newPlan.notes}
+                onChange={handleChange}
               /> */}
+             
+             <Box
+                sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}
+              >
+                <TextField
+                  margin="dense"
+                  label="Highlights"
+                  fullWidth
+                  variant="outlined"
+                  value={newHighlight}
+                  onChange={handleHighlightChange}
+                />
+                <Button
+                  onClick={handleAddHighlight}
+                  disabled={newPlan.activities.length >= 5}
+                  variant="outlined"
+                   size="small"
+                   sx={{ml:'10px' , mt:'5px'}}
+                >
+                  Add Highlights
+                </Button>
+              </Box>
+              <Box>
+                {newPlan.activities?.map((activity, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      marginBottom: 1,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {index + 1}) {activity}
+                    </Typography>
+                    <Button onClick={() => handleRemoveHighlights(index)}  variant="outlined"
+                       size="small">
+                      Remove
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+
               <Box
                 sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}
               >
@@ -517,7 +631,7 @@ export default function PlansPage() {
               style={{ background: "#686D76", textTransform: "none" }}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} variant="contained"
+              <Button onClick={handleSaveClick} variant="contained"
               style={{ background: "#615EFC", textTransform: "none" }}>
                 Save
               </Button>

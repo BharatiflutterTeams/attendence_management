@@ -32,12 +32,16 @@ export default function CompanyProfile() {
 
   const [formValues, setFormValues] = useState({});
   const [isEdit, setIsEdit] = useState(false);
+  const [errors , setErrors] = useState({});
 
   const checkAuth = () => {
-    const token = localStorage.getItem('jwtToken');
+    const token = sessionStorage.getItem('jwtToken');
     if (token && token !== '' && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
+      if(role !== 'superadmin'){
+        navigate('/');
+      }
     } else {
       console.log('Token not Found');
       navigate('/login');
@@ -60,7 +64,7 @@ export default function CompanyProfile() {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+  
     try {
       if (!formValues._id) {
         await axios.post(`${endpoints.serverBaseURL}/api/admin/adminprofile`, formValues);
@@ -81,6 +85,42 @@ export default function CompanyProfile() {
   const handleClose = () => {
     setIsEdit(false);
   };
+  //**********form validation */
+  const validate = () => {
+    const newErrors = {};
+
+    // URL validation for logo
+    if (!formValues.logo) {
+      newErrors.logo = 'Please enter a valid image URL';
+    }
+
+    // Email format validation
+    if (formValues.email && !/\S+@\S+\.\S+/.test(formValues.email)) {
+      newErrors.email = 'Email address is invalid';
+    }
+
+    // Phone number validation
+    if (formValues.phone && !/^\d{10}$/.test(formValues.phone)) {
+      newErrors.phone = 'Please enter a valid 10-digit mobile number';
+    }
+
+    // Description length validation
+    if (formValues.description && formValues.description.length > 400) {
+      newErrors.description = 'Description should be less than 400 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors)?.length === 0;
+  };
+
+  const handleSave = (event) => {
+    event?.preventDefault();
+    if (validate()) {
+      handleSubmit();
+    }
+  };
+  //**************************** */ 
+
 
   return (
     <>
@@ -169,6 +209,8 @@ export default function CompanyProfile() {
                   name="logo"
                   value={formValues?.logo}
                   onChange={handleChange}
+                  error={!!errors.logo}
+                  helperText={errors.logo}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -179,6 +221,7 @@ export default function CompanyProfile() {
                   name="name"
                   value={formValues?.name}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
               <Grid item xs={12}>
@@ -190,6 +233,9 @@ export default function CompanyProfile() {
                   type="email"
                   value={formValues?.email}
                   onChange={handleChange}
+                  required
+                  error={!!errors.email}
+                  helperText={errors.email}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -200,6 +246,7 @@ export default function CompanyProfile() {
                   name="phone"
                   value={formValues?.phone}
                   onChange={handleChange}
+                  required
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -207,6 +254,8 @@ export default function CompanyProfile() {
                       </InputAdornment>
                     ),
                   }}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -217,6 +266,7 @@ export default function CompanyProfile() {
                   name="address"
                   value={formValues?.address}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
               <Grid item xs={12}>
@@ -229,6 +279,10 @@ export default function CompanyProfile() {
                   rows={4}
                   value={formValues?.description}
                   onChange={handleChange}
+                  required
+                  inputProps={{ maxLength: 400 }}
+                 error={!!errors.description}
+                 helperText={errors.description ? errors.description : `${formValues?.description?.length}/400`}
                 />
               </Grid>
             </Grid>
@@ -246,7 +300,7 @@ export default function CompanyProfile() {
             type="submit"
             variant="outlined"
             sx={{ background: "#ffffff", color: '#867AE9', textTransform: "none", fontWeight: 'bold' }}
-            onClick={handleSubmit}
+            onClick={handleSave}
           >
             Save
           </Button>

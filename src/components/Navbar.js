@@ -57,7 +57,7 @@ export default function Navbar() {
   };
   
 const handleLogout=()=>{
-    localStorage.clear();
+  sessionStorage.clear();
    // clearToken();
     navigate('/login');
 } 

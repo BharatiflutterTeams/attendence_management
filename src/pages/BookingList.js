@@ -35,6 +35,7 @@ export default function BookingPage() {
   const Navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [page, setPage] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [pageSize, setPageSize] = useState(100);
   const [rowCount, setRowCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function BookingPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [errors, setErrors] = useState({});
   const [currentBooking, setCurrentBooking] = useState(null);
   const [newBooking, setNewBooking] = useState({
     name: "",
@@ -69,6 +71,9 @@ export default function BookingPage() {
 
   const paymentOptions = ["UPI", "Cash", "Card", "In-house", "Complementary"];
   const complementaryPersons = ["Bharti sir", "Sagar Sir"];
+  
+
+
 
   useEffect(() => {
     fetchBookings();
@@ -80,12 +85,14 @@ export default function BookingPage() {
   }, []);
 
   const checkAuth = () => {
-    const token = localStorage.getItem("jwtToken");
+    const token = sessionStorage.getItem("jwtToken");
 
     if (token && token !== "" && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
-
+      if(role == 'checker'){
+        Navigate('/scanner');
+      }
       //  if(role !== 'admin' || role !== 'superadmin'){
       //      Navigate('/pagenotfound');
       //  }
@@ -96,7 +103,7 @@ export default function BookingPage() {
   };
 
   const fetchBookings = async () => {
-    const token = localStorage.getItem("jwtToken");
+    const token = sessionStorage.getItem("jwtToken");
     if (!token) {
       Navigate("/login");
     }
@@ -217,6 +224,15 @@ export default function BookingPage() {
   const handleDeleteClose = () => {
     setDeleteOpen(false);
   };
+  
+   
+  const handleFilterChange = (event , newValue)=>{
+     // const filterBookings = bookings.filter((booking)=> booking.planId == newValue._id);
+      //setBookings(filterBookings);
+      
+      setSelectedPlan(newValue);
+
+  }
 
   const handleEditSave = async () => {
     try {
@@ -291,7 +307,46 @@ export default function BookingPage() {
       ),
     },
   ];
-  const today = new Date().toDateString().split("T")[0];
+ // const today = new Date().toDateString().split("T")[0];
+
+
+ //form validation ************************************//
+
+ const validate = () => {
+  const newErrors = {};
+  if (newBooking.email && !/\S+@\S+\.\S+/.test(newBooking.email)) {
+    newErrors.email = 'Email is invalid';
+  }
+  if (newBooking.phone && (newBooking.phone.length < 10 || newBooking.phone.length > 15)) {
+    newErrors.phone = 'Phone number must be between 10 and 15 digits';
+  }
+  if (newBooking.paymentMethod === 'In-house' && !newBooking.referenceId) {
+    newErrors.referenceId = 'Reference ID is required for In-house payment';
+  }
+  if (newBooking.paymentMethod === 'Complementary' && !newBooking.complementaryPerson) {
+    newErrors.complementaryPerson = 'Complementary person is required';
+  }
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+const handleSaveClick = () => {
+  if (validate()) {
+    handleSave();
+  }
+};
+
+//****************************************************** */
+
+
+
+
+ const filteredBookings = selectedPlan
+ ? bookings.filter((booking) => booking.planId?._id == selectedPlan?._id)
+ : bookings;
+  console.log( "filteredBookings ",filteredBookings);
+  console.log("selectedPlan" , selectedPlan)
+  
   return (
     <>
       <Navbar />
@@ -330,7 +385,24 @@ export default function BookingPage() {
                   }}
                   size="small"
                 />
-              </div>
+            
+
+              <Autocomplete
+                  options={plans}
+                  getOptionLabel={(option) => option.title}
+                  onChange={handleFilterChange}
+                  value={selectedPlan?.title}
+                  size="small"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Filter by Plan"
+                      variant="outlined"
+                      sx={{ width: 300, ml: 3 }}
+                    />
+                  )}
+                />
+                 </div>
               <Button
                 variant="contained"
                 style={{ background: "#ffffff",color: '#867AE9', textTransform: "none", fontWeight:'bold' }}
@@ -353,6 +425,7 @@ export default function BookingPage() {
               </DialogContentText>
               <TextField
                 autoFocus
+                required
                 margin="dense"
                 label="Name"
                 fullWidth
@@ -363,6 +436,7 @@ export default function BookingPage() {
               />
               <TextField
                 margin="dense"
+                required
                 label="Email"
                 fullWidth
                 variant="outlined"
@@ -370,16 +444,21 @@ export default function BookingPage() {
                 type="email"
                 value={newBooking.email}
                 onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
               />
               <TextField
                 margin="dense"
                 label="Phone"
+                required
                 fullWidth
                 variant="outlined"
                 name="phone"
                 type="number"
                 value={newBooking.phone}
                 onChange={handleChange}
+                error={!!errors.phone}
+                helperText={errors.phone}
               />
 
               <Autocomplete
@@ -395,6 +474,7 @@ export default function BookingPage() {
                     label="Select Plan"
                     margin="dense"
                     fullWidth
+                    required
                   />
                 )}
               />
@@ -411,6 +491,7 @@ export default function BookingPage() {
               <TextField
                 margin="dense"
                 label="Address"
+                required
                 fullWidth
                 variant="outlined"
                 name="address"
@@ -420,6 +501,7 @@ export default function BookingPage() {
               <TextField
                 margin="dense"
                 label="Booking Date"
+                required
                 type="date"
                 fullWidth
                 variant="outlined"
@@ -436,6 +518,7 @@ export default function BookingPage() {
               <TextField
                 margin="dense"
                 label="Adults"
+                required
                 fullWidth
                 variant="outlined"
                 name="adult"
@@ -446,6 +529,7 @@ export default function BookingPage() {
               <TextField
                 margin="dense"
                 label="Children"
+                required
                 fullWidth
                 variant="outlined"
                 name="children"
@@ -466,6 +550,7 @@ export default function BookingPage() {
                     label="Payment Method"
                     margin="dense"
                     fullWidth
+                    required
                   />
                 )}
               />
@@ -479,6 +564,8 @@ export default function BookingPage() {
                   fullWidth
                   value={newBooking.referenceId}
                   onChange={handleChange}
+                  error={!!errors.referenceId}
+                  helperText={errors.referenceId}
                 />
               )}
               {newBooking.paymentMethod === "Complementary" && (
@@ -494,6 +581,8 @@ export default function BookingPage() {
                       label="Complementary Person"
                       margin="dense"
                       fullWidth
+                      error={!!errors.complementaryPerson}
+                      helperText={errors.complementaryPerson}
                     />
                   )}
                 />
@@ -509,7 +598,7 @@ export default function BookingPage() {
                 Cancel
               </Button>
               <Button
-                onClick={handleSave}
+                onClick={handleSaveClick}
                 variant="contained"
                 style={{ background: "#615EFC", textTransform: "none" }}
               >
@@ -745,7 +834,7 @@ export default function BookingPage() {
 
           <Box sx={{ height: '69vh', width: "100%" }}>
             <DataGrid
-              rows={bookings}
+              rows={filteredBookings}
               columns={columns}
               pageSize={pageSize}
               pagination

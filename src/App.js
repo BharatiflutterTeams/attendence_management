@@ -13,6 +13,7 @@ import "./App.css";
 import CompanyProfile from "./pages/CompanyProfile";
 import ApprovalPage from "./pages/ApprovalPage";
 import AdminLogin from "./pages/AdminLogin";
+import AddUserPage from "./pages/AddUserPage";
 //import RequireAuth from './auth.js/RequireAuth';
 //import {ROLES} from './config/roles'
 import axios from "axios";
@@ -20,6 +21,8 @@ import useAppStore from "./appStore";
 import { useEffect } from "react";
 import endpoints from "./Endpoints/endpoint";
 import PlansPage from "./pages/dumyPage";
+import ScannerPage from "./pages/ScannerPage";
+import BookingConfirmPage from "./pages/BookingConfirmPage";
 
 const App = () => {
   const setCompanyData = useAppStore((state) => state.setCompanyData);
@@ -41,7 +44,7 @@ const App = () => {
   };
 
   return (
-    <Box sx={{ background: "#EEF1FF" }}>
+    <Box sx={{ background: "#EEF1FF" , minHeight:'100vh'}}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
 
@@ -54,6 +57,9 @@ const App = () => {
         <Route path="/companyprofile" element={<CompanyProfile />} />
 
         <Route path="/approval" element={<ApprovalPage />} />
+        <Route path= "/scanner" element={<ScannerPage/>}/>
+        <Route path="/bookingconfirm" element={<BookingConfirmPage/>}/>
+        <Route path="/addadminchecker" element={<AddUserPage/>}/>
 
         <Route path="*" element={<NotFound />} />
       </Routes>

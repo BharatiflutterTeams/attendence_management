@@ -13,12 +13,14 @@ function Home() {
 
 
   const checkAuth = ()=>{
-    const token = localStorage.getItem('jwtToken')
+    const token = sessionStorage.getItem('jwtToken')
 
     if( token && token !== '' && token !== null){
     const decoded = jwtDecode(token);
     const role = decoded.role
-    
+    if(role == 'checker'){
+      Navigate('/scanner');
+    }
    
    }
    else{

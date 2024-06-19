@@ -93,7 +93,7 @@ export default function Sidenav() {
 
   let role = '';
   const roleCheck = async()=>{
-     const token =  localStorage.getItem('jwtToken');
+     const token =  sessionStorage.getItem('jwtToken');
      if( token  && token !== '' && token !== null){
          const decoded = jwtDecode(token);
          role = decoded.role;
@@ -267,7 +267,7 @@ export default function Sidenav() {
             </ListItemButton>
           </ListItem>
 
-          <ListItem
+         { isSuperAdmin &&(<ListItem
             disablePadding
             sx={{ display: "block" }}
             onClick={() => {
@@ -295,7 +295,7 @@ export default function Sidenav() {
                 sx={{ opacity: open ? 1 : 0 }}
               />
             </ListItemButton>
-          </ListItem>
+          </ListItem>)}
 
           {isSuperAdmin && (
             <ListItem
@@ -323,6 +323,38 @@ export default function Sidenav() {
                 </ListItemIcon>
                 <ListItemText
                   primary="Approval"
+                  sx={{ opacity: open ? 1 : 0 }}
+                />
+              </ListItemButton>
+            </ListItem>
+          )}
+           
+           {isSuperAdmin && (
+            <ListItem
+              disablePadding
+              sx={{ display: "block" }}
+              onClick={() => {
+                navigate("/addadminchecker");
+              }}
+            >
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? "initial" : "center",
+                  px: 2.5,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : "auto",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CorporateFareIcon style={{ fill: "#867AE9" }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Manage Roles"
                   sx={{ opacity: open ? 1 : 0 }}
                 />
               </ListItemButton>

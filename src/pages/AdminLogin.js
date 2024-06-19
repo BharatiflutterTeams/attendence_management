@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Grid, Card, Typography, Box } from '@mui/material';
+import { TextField, Button, Grid, Card, Typography, Box , Avatar } from '@mui/material';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,7 +27,7 @@ const AdminLogin = () => {
 
       if (response.status === 200) {
         const { token } = response.data;
-        localStorage.setItem('jwtToken', token); // Store the token in localStorage
+        sessionStorage.setItem('jwtToken', token); // Store the token in sessionStorage
         console.log('Login successful');
         //setToken(String(token));
         toast.success("Login successfull")
@@ -46,7 +46,7 @@ const AdminLogin = () => {
  // https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?cs=srgb&dl=pexels-pixabay-261169.jpg&fm=jpg
   return (
     <>
-    <Box minHeight="90vh" bgcolor="#f5f5f5">
+    <Box minHeight="100vh" bgcolor="#f5f5f5">
       <Grid container>
         <Grid 
           item 
@@ -70,10 +70,19 @@ const AdminLogin = () => {
           justifyContent="center" 
           alignItems="center"
         >
-          <Box sx={{padding:5}}>
+          <Box sx={{padding:5 , marginTop:'20px'}}>
             {/* <Typography variant="h5" component="h3" gutterBottom align="center" sx={{margin:2}}>
               Bharti-Resort
             </Typography> */}
+              <Avatar
+              alt="Company Logo"
+              src={companyData?.logo} // use the logo from the store
+              sx={{
+                width: 100,
+                height: 100,
+                margin: 'auto',
+              }}
+            />
             
             <Typography variant="h6" component="h2" gutterBottom align="center" sx={{margin:3}}>
               Welcome to {companyData?.name}

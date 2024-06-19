@@ -12,10 +12,16 @@ const companyProfileStore = (set) => ({
   setCompanyData: (newData) => set({ companyData: newData }),
 });
 
+const bookingIdStore = (set)=>({
+   bookingId : null,
+   setBookingId:(newData) => set({bookingId:newData}),
+});
+
 const useAppStore = create(persist(
   (set) => ({
     ...appStore(set),
     ...companyProfileStore(set),
+    ...bookingIdStore(set)
   }),
   { name: 'my_app_store' }
 ));

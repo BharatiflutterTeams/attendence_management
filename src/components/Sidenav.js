@@ -24,6 +24,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import {useNavigate} from 'react-router-dom';
 import useAppStore from '../appStore'
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import { jwtDecode } from 'jwt-decode';
 import { Link } from 'react-router-dom';
 
@@ -319,7 +321,7 @@ export default function Sidenav() {
                     justifyContent: "center",
                   }}
                 >
-                  <CorporateFareIcon style={{ fill: "#867AE9" }} />
+                  <VerifiedUserIcon style={{ fill: "#867AE9" }} />
                 </ListItemIcon>
                 <ListItemText
                   primary="Approval"
@@ -351,7 +353,7 @@ export default function Sidenav() {
                     justifyContent: "center",
                   }}
                 >
-                  <CorporateFareIcon style={{ fill: "#867AE9" }} />
+                  <SupervisorAccountIcon style={{ fill: "#867AE9" }} />
                 </ListItemIcon>
                 <ListItemText
                   primary="Manage Roles"

@@ -25,10 +25,11 @@ import Sidenav from "../components/Sidenav";
 import Navbar from "../components/Navbar";
 import AddIcon from "@mui/icons-material/Add";
 import Autocomplete from "@mui/material/Autocomplete";
-import useAuth from "../Hooks/useAuth";
+import { ToastContainer, toast } from 'react-toastify';
+//import useAuth from "../Hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import styles from './BookingList.module.css';
+//import styles from './BookingList.module.css';
 const drawerWidth = 240;
 
 export default function BookingPage() {
@@ -52,10 +53,10 @@ export default function BookingPage() {
     planId: "",
     gstNumber: "",
     address: "",
-    bookingDate: "",
+    bookingDate: new Date().toISOString().split("T")[0],
     adult: "",
     children: "",
-    PaymentMethod: "",
+    paymentMethod: "",
     referenceId: "",
     complementaryPerson: "",
     adultPrice: "",
@@ -70,7 +71,7 @@ export default function BookingPage() {
   const [plans, setPlans] = useState([]);
 
   const paymentOptions = ["UPI", "Cash", "Card", "In-house", "Complementary"];
-  const complementaryPersons = ["Bharti sir", "Sagar Sir"];
+  const complementaryPersons = ["Bharti sir", "Bharti Madam"];
   
 
 
@@ -134,8 +135,21 @@ export default function BookingPage() {
     }
   };
 
+  // const handleDateChange = (event) => {
+  //   setSelectedDate(event.target.value);
+  // };
   const handleDateChange = (event) => {
-    setSelectedDate(event.target.value);
+    const inputDate = event.target.value;
+    const today = new Date().toISOString().split("T")[0];
+    
+    // Check if the entered date is before today
+    if (inputDate >= today) {
+      setSelectedDate(inputDate);
+    } else {
+      // Optionally, show an error message or alert to the user
+      //alert("Date cannot be before today");
+      toast.info("Date cannot be before today",{position:'top-center'})
+    }
   };
 
   const handleOpen = () => {
@@ -148,8 +162,9 @@ export default function BookingPage() {
 
   const handleSave = async () => {
     try {
-      const response = await axios.post(`${endpoints.serverBaseURL}/api/bookings`, newBooking);
-      setBookings([...bookings, response.data]);
+      const response = await axios.post(`${endpoints.serverBaseURL}/api/admin/postbooking`, newBooking);
+      //setBookings([...bookings, response.data]);
+      fetchBookings();
       setRowCount(bookings.length + 1);
       setNewBooking({
         name: "",
@@ -158,7 +173,7 @@ export default function BookingPage() {
         planId: "",
         gstNumber: "",
         address: "",
-        bookingDate: "",
+        bookingDate: new Date().toISOString().split("T")[0],
         adult: "",
         children: "",
         paymentMethod: "",
@@ -185,6 +200,8 @@ export default function BookingPage() {
   const handlePaymentChange = (event, newValue) => {
     setNewBooking({ ...newBooking, paymentMethod: newValue });
   };
+
+
 
   const handleComplementaryChange = (event, newValue) => {
     setNewBooking({ ...newBooking, complementaryPerson: newValue });
@@ -314,6 +331,9 @@ export default function BookingPage() {
 
  const validate = () => {
   const newErrors = {};
+  if(!newBooking.name){
+    newErrors.name = "Name is Invalid";
+  }
   if (newBooking.email && !/\S+@\S+\.\S+/.test(newBooking.email)) {
     newErrors.email = 'Email is invalid';
   }
@@ -349,6 +369,7 @@ const handleSaveClick = () => {
   
   return (
     <>
+      <ToastContainer/>
       <Navbar />
       <Box sx={{ display: "flex" }}>
         <Sidenav />
@@ -416,7 +437,7 @@ const handleSaveClick = () => {
 
           {/* ADD booking form */}
           <Dialog open={open} onClose={handleClose}>
-            <DialogTitle sx={{ background: "#615EFC", color: "white" }}>
+            <DialogTitle sx={{ background: "#867AE9", color: "white" }}>
               Add Booking
             </DialogTitle>
             <DialogContent>
@@ -433,6 +454,8 @@ const handleSaveClick = () => {
                 name="name"
                 value={newBooking.name}
                 onChange={handleChange}
+                error={!!errors.name}
+                helperText={errors.name}
               />
               <TextField
                 margin="dense"
@@ -507,7 +530,14 @@ const handleSaveClick = () => {
                 variant="outlined"
                 name="bookingDate"
                 value={newBooking.bookingDate}
-                onChange={handleChange}
+                onChange={(e)=>{
+                        const today = new Date().toISOString().split("T")[0]
+                        if(e.target.value >= today ){
+                        handleChange(e)}
+                         else{
+                           toast.warn("Past Date is not Allowed for Booking")
+                         }
+                      }}
                 InputLabelProps={{
                   shrink: true,
                 }}
@@ -526,6 +556,17 @@ const handleSaveClick = () => {
                 value={newBooking.adult}
                 onChange={handleChange}
               />
+               <TextField
+                margin="dense"
+                label="Adult Price"
+                required
+                fullWidth
+                variant="outlined"
+                name="adultPrice"
+                type="number"
+                value={newBooking.adultPrice}
+                onChange={handleChange}
+              />
               <TextField
                 margin="dense"
                 label="Children"
@@ -535,6 +576,17 @@ const handleSaveClick = () => {
                 name="children"
                 type="number"
                 value={newBooking.children}
+                onChange={handleChange}
+              />
+               <TextField
+                margin="dense"
+                label="Children Price"
+                required
+                fullWidth
+                variant="outlined"
+                name="childrenPrice"
+                type="number"
+                value={newBooking.childrenPrice}
                 onChange={handleChange}
               />
 
@@ -600,7 +652,7 @@ const handleSaveClick = () => {
               <Button
                 onClick={handleSaveClick}
                 variant="contained"
-                style={{ background: "#615EFC", textTransform: "none" }}
+                style={{ background: "#867AE9", textTransform: "none" }}
               >
                 Save
               </Button>
@@ -704,13 +756,13 @@ const handleSaveClick = () => {
             <Table>
               <TableBody>
                 <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Payment Mode</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.paymentMode}</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Payment Method</TableCell>
+                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.paymentMethod}</TableCell>
                 </TableRow>
-                <TableRow>
+                {/* <TableRow>
                   <TableCell style={{ backgroundColor: "#f5f5f5" }}>Status</TableCell>
                   <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.status}</TableCell>
-                </TableRow>
+                </TableRow> */}
               </TableBody>
             </Table>
           </TableContainer>
@@ -845,6 +897,7 @@ const handleSaveClick = () => {
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               getRowId={(row) => row._id}
               sx={{ background: "#f7f5fa" }}
+              //getRowId={(row) => row._id}
             />
           </Box>
         </Box>

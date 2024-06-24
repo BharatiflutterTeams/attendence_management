@@ -37,8 +37,9 @@ export default function PlansPage() {
   const [newPlan, setNewPlan] = React.useState({
     title: "",
     description: "",
-    adult_price: "",
-    child_price: "",
+    //adult_price: "",
+    //child_price: "",
+    subPackages:[],
     activities: [],
     addOn: [],
     image_list: [],
@@ -58,6 +59,9 @@ export default function PlansPage() {
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
   const [errors, setErrors] = React.useState({});
+  const [subPackages , setsubPackages] = React.useState([]);
+  const [subPackageDialogOpen, setSubPackageDialogOpen] = React.useState(false);
+  const [currentSubPackage,setCurrentSubPackage] = React.useState({name:'',adult_price:'',child_price:''});
   
   
 
@@ -126,14 +130,16 @@ export default function PlansPage() {
       setNewPlan({
         title: "",
         description: "",
-        adult_price: "",
-        child_price: "",
+        //adult_price: "",
+        //child_price: "",
+        subPackages:[],
         activities: [],
         addOn: [],
         image_list: [],
         adult_gold_package:[],
         child_gold_package:[],
         plan_coupon: [],
+
         //notes:""
       });
       handleClose();
@@ -273,12 +279,12 @@ export default function PlansPage() {
     if (!newPlan.description || newPlan.description.length > 200) {
       newErrors.description = 'Description is required and should be less than 200 characters';
     }
-    if (!newPlan.adult_price || isNaN(newPlan.adult_price)) {
-      newErrors.adult_price = 'Valid adult price is required';
-    }
-    if (!newPlan.child_price || isNaN(newPlan.child_price)) {
-      newErrors.child_price = 'Valid child price is required';
-    }
+    // if (!newPlan.adult_price || isNaN(newPlan.adult_price)) {
+    //   newErrors.adult_price = 'Valid adult price is required';
+    // }
+    // if (!newPlan.child_price || isNaN(newPlan.child_price)) {
+    //   newErrors.child_price = 'Valid child price is required';
+    // }
     if (newPlan.image_list.length === 0) {
       newErrors.image_list = 'At least one image link is required';
     }
@@ -300,7 +306,29 @@ export default function PlansPage() {
 
   //************************/
 
- 
+  //***********Handle Sub Packages ***************************/
+  const handleAddSubPackageClick = () =>{
+      setCurrentSubPackage({name:'', adult_price:'',child_price:''});
+      setSubPackageDialogOpen(true);
+  };
+
+  const handleSubPackageChange = (e)=>{
+     const {name , value} = e.target;
+     setCurrentSubPackage({...currentSubPackage,[name]:value});
+  }
+  
+ const handleSaveSubPackage = ()=>{
+     setsubPackages([...subPackages,currentSubPackage]);
+     setSubPackageDialogOpen(false);
+     setNewPlan({...newPlan , subPackages:subPackages})
+ }
+
+ const handleRemoveSubPackage = (index)=>{
+    const newSubPackages = subPackages.filter((_,i)=>i !== index);
+    setsubPackages(newSubPackages);
+ }
+
+//******************************************** */
   const filteredPlans = plans.filter(
     (plan) =>
       plan.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -359,8 +387,9 @@ export default function PlansPage() {
             </Button>
           </Box>
 
+           {/* add plan dialog */}
           <Dialog open={open} onClose={handleClose}>
-            <DialogTitle sx={{background:'#615EFC', color:"white"}}>{selectedPlan ? "Edit Plan" : "Add Plan"}</DialogTitle>
+            <DialogTitle sx={{background:'#867AE9', color:"white"}}>{selectedPlan ? "Edit Plan" : "Add Plan"}</DialogTitle>
             <DialogContent>
               <DialogContentText>
                 Fill in the details of the plan.
@@ -378,7 +407,7 @@ export default function PlansPage() {
                 error={!!errors.title}
                 helperText={errors.title}
               />
-              <TextField
+               <TextField
                 margin="dense"
                 label="Description"
                 required
@@ -391,7 +420,7 @@ export default function PlansPage() {
                 helperText={errors.description}
                 inputProps={{ maxLength: 200 }}
               />
-              <TextField
+              {/* <TextField
                 margin="dense"
                 label="Adult Price"
                 fullWidth
@@ -416,8 +445,31 @@ export default function PlansPage() {
                 error={!!errors.child_price}
                 helperText={errors.child_price}
                 type="number"
-              />
-             
+              />  */}
+               
+                 {/* sub Package section */}
+               <Button onClick={handleAddSubPackageClick} fullWidth variant='outlined' size="small" sx={{mt:'1'}} >
+                  Add Sub Package
+               </Button>
+               <Box>
+                  { subPackages.map((subPackage , index)=>(
+                    <Card key={index} sx={{m:1}}>
+                        <CardContent>
+                            <Typography variant = 'h6'>{subPackage.name}</Typography>
+                            <Typography variant = 'body2'>Adult Price :{subPackage.adult_price}</Typography>
+                            <Typography variant="body2">Child Price: {subPackage.child_price}</Typography>
+                        </CardContent>
+                        <CardActions>
+                            <Button onClick={()=>handleRemoveSubPackage(index)} varaint="outlined" size="small" >
+                                Remove
+                            </Button>
+                        </CardActions>
+                    </Card>
+                  ))
+
+                  }
+               </Box>
+
               <TextField
                 margin="dense"
                 label="Add-On"
@@ -452,7 +504,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddHighlight}
-                  disabled={newPlan.activities.length >= 5}
+                  disabled={newPlan.activities?.length >= 5}
                   variant="outlined"
                    size="small"
                    sx={{ml:'10px' , mt:'5px'}}
@@ -632,11 +684,61 @@ export default function PlansPage() {
                 Cancel
               </Button>
               <Button onClick={handleSaveClick} variant="contained"
-              style={{ background: "#615EFC", textTransform: "none" }}>
+              style={{ background: "#867AE9", textTransform: "none" }}>
                 Save
               </Button>
             </DialogActions>
           </Dialog>
+          
+
+           {/* sub package dialog */}
+            <Dialog open={subPackageDialogOpen} onClose={()=>{setSubPackageDialogOpen(false)}}>
+               <DialogTitle sx={{background:'#867AE9', color:'white'}} >Add Sub Package</DialogTitle> 
+               <DialogContent>
+                    <TextField 
+                       autoFocus
+                       margin="sub Package Name"
+                       label="Sub Pacckage Name "
+                       fullWidth
+                       variant="outlined"
+                       name="name"
+                       size="small"
+                       value={currentSubPackage.name}
+                       onChange={handleSubPackageChange}
+                       sx={{mt:'10px'}}
+                    />
+                    <TextField
+                        margin="dense"
+                        label = "Adult Price"
+                        fullWidth
+                        variant="outlined"
+                        name="adult_price"
+                        size="small"
+                        value={currentSubPackage.adult_price}
+                        onChange={handleSubPackageChange}
+                        type="number"
+                    />
+                     <TextField
+                       margin="dense"
+                       label= "Child Price"
+                       fullWidth
+                       variant="outlined"
+                       name="child_price"
+                       size="small"
+                       value={currentSubPackage.child_price}
+                       onChange={handleSubPackageChange}
+                       type="number"
+                      />
+               </DialogContent>
+                 <DialogActions>
+                        <Button onClick={()=>setSubPackageDialogOpen(false)} variant="conatained" style={{background:'#686D76' ,color:"white" ,textTransform:"none"}} >
+                           Cancel
+                        </Button>
+                        <Button onClick={handleSaveSubPackage} variant="contained" style={{background:"#867AE9",textTransform:"none"}}>
+                           Save
+                        </Button>
+                 </DialogActions>
+            </Dialog>
 
           <Snackbar
             open={snackbarOpen}

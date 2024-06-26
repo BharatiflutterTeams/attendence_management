@@ -12,18 +12,18 @@ import {
   InputAdornment,
   Card,
   Divider,
+  IconButton,
 } from '@mui/material';
+import { AddCircle, RemoveCircle } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode';
-import  endpoints from '../Endpoints/endpoint'
-//import useAppStore from '../appStore';
+import { jwtDecode } from 'jwt-decode';
+import endpoints from '../Endpoints/endpoint';
 
 const drawerWidth = 240;
 
 export default function CompanyProfile() {
   const navigate = useNavigate();
-  //const setCompanyData = useAppStore((state) => state.setCompanyData);
 
   useEffect(() => {
     fetchDetails();
@@ -32,14 +32,16 @@ export default function CompanyProfile() {
 
   const [formValues, setFormValues] = useState({});
   const [isEdit, setIsEdit] = useState(false);
-  const [errors , setErrors] = useState({});
+  const [errors, setErrors] = useState({});
+  const [complementaryPersons, setComplementaryPersons] = useState([]);
+  const [paymentMethods ,  setPaymentMethods] = useState([]);
 
   const checkAuth = () => {
     const token = sessionStorage.getItem('jwtToken');
     if (token && token !== '' && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
-      if(role !== 'superadmin'){
+      if (role !== 'superadmin') {
         navigate('/');
       }
     } else {
@@ -52,7 +54,7 @@ export default function CompanyProfile() {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/adminprofile`);
       setFormValues(response.data?.adminprofile[0]);
-      //setCompanyData(response.data?.adminprofile[0]);
+      setComplementaryPersons(response.data?.adminprofile[0]?.complementaryPersons || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
     }
@@ -63,13 +65,42 @@ export default function CompanyProfile() {
     setFormValues({ ...formValues, [name]: value });
   };
 
+  const handleComplementaryPersonChange = (index, value) => {
+    const updatedPersons = [...complementaryPersons];
+    updatedPersons[index] = value;
+    setComplementaryPersons(updatedPersons);
+  };
+  const handlePaymentMethodChange = (index, value) =>{
+    const updatedMethods = [...paymentMethods];
+    updatedMethods[index] = value;
+    setPaymentMethods(updatedMethods);
+  }
+    
+
+  const addComplementaryPerson = () => {
+    setComplementaryPersons([...complementaryPersons, '']);
+  };
+
+  const addPaymentMehod = ()=>{
+    setPaymentMethods([...paymentMethods,'']);
+  }
+
+  const removeComplementaryPerson = (index) => {
+    const updatedPersons = complementaryPersons.filter((_, i) => i !== index);
+    setComplementaryPersons(updatedPersons);
+  };
+
+  const removePaymentMethod =(index)=>{
+    const updatedMethods = paymentMethods.filter((_,i)=> i !== index)
+  }
+
   const handleSubmit = async (event) => {
-  
     try {
+      const updatedFormValues = { ...formValues, complementaryPersons , paymentMethods};
       if (!formValues._id) {
-        await axios.post(`${endpoints.serverBaseURL}/api/admin/adminprofile`, formValues);
+        await axios.post(`${endpoints.serverBaseURL}/api/admin/adminprofile`, updatedFormValues);
       } else {
-        await axios.put(`${endpoints.serverBaseURL}/api/admin/adminprofile/${formValues._id}`, formValues);
+        await axios.put(`${endpoints.serverBaseURL}/api/admin/adminprofile/${formValues._id}`, updatedFormValues);
       }
       setIsEdit(false);
       fetchDetails();
@@ -85,6 +116,7 @@ export default function CompanyProfile() {
   const handleClose = () => {
     setIsEdit(false);
   };
+
   //**********form validation */
   const validate = () => {
     const newErrors = {};
@@ -119,8 +151,6 @@ export default function CompanyProfile() {
       handleSubmit();
     }
   };
-  //**************************** */ 
-
 
   return (
     <>
@@ -161,6 +191,18 @@ export default function CompanyProfile() {
                       alt="Company Logo"
                       src={formValues?.logo}
                     />
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h7" color="#867AE9" gutterBottom>
+                      Complementary Persons
+                    </Typography>
+                     <Typography variant='body1' >{complementaryPersons.join(", ")}</Typography>
+                     <Divider sx={{ my: 2 }} />
+
+                    <Typography variant="h7" color="#867AE9" gutterBottom>
+                      Selected Payment Methods
+                    </Typography>
+                     <Typography variant='body1' >{paymentMethods.join(", ")}</Typography>
+                      
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="h6" color="#867AE9" gutterBottom>
@@ -182,6 +224,7 @@ export default function CompanyProfile() {
                     <Typography variant="body1">
                       {formValues?.description}
                     </Typography>
+              
                   </Grid>
                 </Grid>
               </Card>
@@ -190,6 +233,8 @@ export default function CompanyProfile() {
         </Box>
       </Box>
 
+
+          {/* Edit Profile form */}
       <Dialog open={isEdit} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Company Profile</DialogTitle>
         <DialogContent>
@@ -281,12 +326,65 @@ export default function CompanyProfile() {
                   onChange={handleChange}
                   required
                   inputProps={{ maxLength: 400 }}
-                 error={!!errors.description}
-                 helperText={errors.description ? errors.description : `${formValues?.description?.length}/400`}
+                  error={!!errors.description}
+                  helperText={errors.description ? errors.description : `${formValues?.description?.length}/400`}
                 />
               </Grid>
-            </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6" color="#867AE9" gutterBottom>
+                  Complementary Persons
+                </Typography>
+                {complementaryPersons.map((person, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      value={person}
+                      onChange={(e) => handleComplementaryPersonChange(index, e.target.value)}
+                      label={`Person ${index + 1}`}
+                    />
+                    <IconButton onClick={() => removeComplementaryPerson(index)} color="secondary">
+                      <RemoveCircle />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button
+                  startIcon={<AddCircle />}
+                  onClick={addComplementaryPerson}
+                  sx={{ mt: 2, textTransform: 'none', fontWeight: 'bold' }}
+                >
+                  Add Person
+                </Button>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="h6" color="#867AE9" gutterBottom>
+                  Payment Methods
+                </Typography>
+                {paymentMethods.map((method, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      value={method}
+                      onChange={(e) => handlePaymentMethodChange(index, e.target.value)}
+                      label={`Method ${index + 1}`}
+                    />
+                    <IconButton onClick={() => removePaymentMethod(index)} color="secondary">
+                      <RemoveCircle />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button
+                  startIcon={<AddCircle />}
+                  onClick={addPaymentMehod}
+                  sx={{ mt: 2, textTransform: 'none', fontWeight: 'bold' }}
+                >
+                  Add Payment Method
+                </Button>
+              </Grid>
+            </Grid> 
+            
           </Box>
+          
         </DialogContent>
         <DialogActions>
           <Button

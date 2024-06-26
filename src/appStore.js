@@ -17,6 +17,7 @@ const bookingIdStore = (set)=>({
    setBookingId:(newData) => set({bookingId:newData}),
 });
 
+
 const useAppStore = create(persist(
   (set) => ({
     ...appStore(set),

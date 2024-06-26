@@ -15,7 +15,12 @@ import {
   Card,
   CardContent,
   Divider,
-  Table, TableBody, TableCell, TableContainer, TableRow, Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Paper,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -25,15 +30,18 @@ import Sidenav from "../components/Sidenav";
 import Navbar from "../components/Navbar";
 import AddIcon from "@mui/icons-material/Add";
 import Autocomplete from "@mui/material/Autocomplete";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 //import useAuth from "../Hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import useAppStore from "../appStore";
 //import styles from './BookingList.module.css';
 const drawerWidth = 240;
 
 export default function BookingPage() {
   const Navigate = useNavigate();
+  const companyData = useAppStore((state) => state.companyData);
+  const [adminName, setAdminName] = useState("");
   const [bookings, setBookings] = useState([]);
   const [page, setPage] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -44,6 +52,7 @@ export default function BookingPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [adminRole, setAdminrole] = useState();
   const [errors, setErrors] = useState({});
   const [currentBooking, setCurrentBooking] = useState(null);
   const [newBooking, setNewBooking] = useState({
@@ -61,6 +70,9 @@ export default function BookingPage() {
     complementaryPerson: "",
     adultPrice: "",
     childrenPrice: "",
+    upiId: "",
+    creditCardNumber: "",
+    bookingViaPerson: adminName,
   });
 
   // const [fromDate, setFromDate] = useState(new Date().toISOString().split("T")[0]);
@@ -70,11 +82,9 @@ export default function BookingPage() {
   );
   const [plans, setPlans] = useState([]);
 
-  const paymentOptions = ["UPI", "Cash", "Card", "In-house", "Complementary"];
-  const complementaryPersons = ["Bharti sir", "Bharti Madam"];
-  
-
-
+  const paymentOptions = [...companyData.paymentMethods];
+  const complementaryPersons = [...companyData.complementaryPersons];
+  //console.log("complementary",companyData.complementaryPersons )
 
   useEffect(() => {
     fetchBookings();
@@ -85,23 +95,33 @@ export default function BookingPage() {
     checkAuth();
   }, []);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     const token = sessionStorage.getItem("jwtToken");
 
     if (token && token !== "" && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
-      if(role == 'checker'){
-        Navigate('/scanner');
+      if (role == "checker") {
+        Navigate("/scanner");
       }
       //  if(role !== 'admin' || role !== 'superadmin'){
       //      Navigate('/pagenotfound');
       //  }
+      const adminname = decoded.name;
+      setAdminName(adminname);
+      setAdminrole(role);
+      //console.log("adminName" , adminName);
     } else {
       console.log("Token not Found");
       Navigate("/login");
     }
   };
+
+  useEffect(() => {
+    if (adminName) {
+      console.log("adminName", adminName);
+    }
+  }, [adminName]);
 
   const fetchBookings = async () => {
     const token = sessionStorage.getItem("jwtToken");
@@ -141,14 +161,14 @@ export default function BookingPage() {
   const handleDateChange = (event) => {
     const inputDate = event.target.value;
     const today = new Date().toISOString().split("T")[0];
-    
+
     // Check if the entered date is before today
     if (inputDate >= today) {
       setSelectedDate(inputDate);
     } else {
       // Optionally, show an error message or alert to the user
       //alert("Date cannot be before today");
-      toast.info("Date cannot be before today",{position:'top-center'})
+      toast.info("Date cannot be before today", { position: "top-center" });
     }
   };
 
@@ -161,8 +181,12 @@ export default function BookingPage() {
   };
 
   const handleSave = async () => {
+    const finalBooking = { ...newBooking, bookingViaPerson: adminName };
     try {
-      const response = await axios.post(`${endpoints.serverBaseURL}/api/admin/postbooking`, newBooking);
+      const response = await axios.post(
+        `${endpoints.serverBaseURL}/api/admin/postbooking`,
+        finalBooking
+      );
       //setBookings([...bookings, response.data]);
       fetchBookings();
       setRowCount(bookings.length + 1);
@@ -181,6 +205,9 @@ export default function BookingPage() {
         complementaryPerson: "",
         adultPrice: "",
         childrenPrice: "",
+        upiId: "",
+        creditCardNumber: "",
+        bookingViaPerson: adminName,
       });
       handleClose();
     } catch (error) {
@@ -200,8 +227,6 @@ export default function BookingPage() {
   const handlePaymentChange = (event, newValue) => {
     setNewBooking({ ...newBooking, paymentMethod: newValue });
   };
-
-
 
   const handleComplementaryChange = (event, newValue) => {
     setNewBooking({ ...newBooking, complementaryPerson: newValue });
@@ -241,19 +266,20 @@ export default function BookingPage() {
   const handleDeleteClose = () => {
     setDeleteOpen(false);
   };
-  
-   
-  const handleFilterChange = (event , newValue)=>{
-     // const filterBookings = bookings.filter((booking)=> booking.planId == newValue._id);
-      //setBookings(filterBookings);
-      
-      setSelectedPlan(newValue);
 
-  }
+  const handleFilterChange = (event, newValue) => {
+    // const filterBookings = bookings.filter((booking)=> booking.planId == newValue._id);
+    //setBookings(filterBookings);
+
+    setSelectedPlan(newValue);
+  };
 
   const handleEditSave = async () => {
     try {
-      await axios.put(`${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`, newBooking);
+      await axios.put(
+        `${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`,
+        newBooking
+      );
       const updatedBookings = bookings.map((booking) =>
         booking._id === currentBooking._id ? newBooking : booking
       );
@@ -266,7 +292,9 @@ export default function BookingPage() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`);
+      await axios.delete(
+        `${endpoints.serverBaseURL}/api/admin/booking/${currentBooking._id}`
+      );
       const updatedBookings = bookings.filter(
         (booking) => booking._id !== currentBooking._id
       );
@@ -324,52 +352,62 @@ export default function BookingPage() {
       ),
     },
   ];
- // const today = new Date().toDateString().split("T")[0];
+  // const today = new Date().toDateString().split("T")[0];
 
+  //form validation ************************************//
 
- //form validation ************************************//
+  const validate = () => {
+    const newErrors = {};
+    if (!newBooking.name) {
+      newErrors.name = "Name is Invalid";
+    }
+    if (newBooking.email && !/\S+@\S+\.\S+/.test(newBooking.email)) {
+      newErrors.email = "Email is invalid";
+    }
+    if (
+      newBooking.phone &&
+      (newBooking.phone.length < 10 || newBooking.phone.length > 15)
+    ) {
+      newErrors.phone = "Phone number must be between 10 and 15 digits";
+    }
+    if (newBooking.paymentMethod === "room guest" && !newBooking.referenceId) {
+      newErrors.referenceId = "Reference ID is required for room guest payment";
+    }
+    if (
+      newBooking.paymentMethod === "Complementary" &&
+      !newBooking.complementaryPerson
+    ) {
+      newErrors.complementaryPerson = "Complementary person is required";
+    }
 
- const validate = () => {
-  const newErrors = {};
-  if(!newBooking.name){
-    newErrors.name = "Name is Invalid";
-  }
-  if (newBooking.email && !/\S+@\S+\.\S+/.test(newBooking.email)) {
-    newErrors.email = 'Email is invalid';
-  }
-  if (newBooking.phone && (newBooking.phone.length < 10 || newBooking.phone.length > 15)) {
-    newErrors.phone = 'Phone number must be between 10 and 15 digits';
-  }
-  if (newBooking.paymentMethod === 'In-house' && !newBooking.referenceId) {
-    newErrors.referenceId = 'Reference ID is required for In-house payment';
-  }
-  if (newBooking.paymentMethod === 'Complementary' && !newBooking.complementaryPerson) {
-    newErrors.complementaryPerson = 'Complementary person is required';
-  }
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    if (newBooking.paymentMethod === "UPI" && !newBooking.upiId) {
+      newErrors.upiId = "UPI ID is Required";
+    }
+    if (newBooking.paymentMethod === "Card" && !newBooking.creditCardNumber) {
+      newErrors.creditCardNumber = "Card Number is required";
+    }
 
-const handleSaveClick = () => {
-  if (validate()) {
-    handleSave();
-  }
-};
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-//****************************************************** */
+  const handleSaveClick = () => {
+    if (validate()) {
+      handleSave();
+    }
+  };
 
+  //****************************************************** */
 
+  const filteredBookings = selectedPlan
+    ? bookings.filter((booking) => booking.planId?._id == selectedPlan?._id)
+    : bookings;
+  console.log("filteredBookings ", filteredBookings);
+  console.log("selectedPlan", selectedPlan);
 
-
- const filteredBookings = selectedPlan
- ? bookings.filter((booking) => booking.planId?._id == selectedPlan?._id)
- : bookings;
-  console.log( "filteredBookings ",filteredBookings);
-  console.log("selectedPlan" , selectedPlan)
-  
   return (
     <>
-      <ToastContainer/>
+      <ToastContainer />
       <Navbar />
       <Box sx={{ display: "flex" }}>
         <Sidenav />
@@ -384,7 +422,7 @@ const handleSaveClick = () => {
           }}
         >
           {/* Date filter card */}
-          <Box >
+          <Box>
             <CardContent
               sx={{
                 display: "flex",
@@ -406,9 +444,8 @@ const handleSaveClick = () => {
                   }}
                   size="small"
                 />
-            
 
-              <Autocomplete
+                <Autocomplete
                   options={plans}
                   getOptionLabel={(option) => option.title}
                   onChange={handleFilterChange}
@@ -423,10 +460,15 @@ const handleSaveClick = () => {
                     />
                   )}
                 />
-                 </div>
+              </div>
               <Button
                 variant="contained"
-                style={{ background: "#ffffff",color: '#867AE9', textTransform: "none", fontWeight:'bold' }}
+                style={{
+                  background: "#ffffff",
+                  color: "#867AE9",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
                 onClick={handleOpen}
                 startIcon={<AddIcon />}
               >
@@ -530,14 +572,14 @@ const handleSaveClick = () => {
                 variant="outlined"
                 name="bookingDate"
                 value={newBooking.bookingDate}
-                onChange={(e)=>{
-                        const today = new Date().toISOString().split("T")[0]
-                        if(e.target.value >= today ){
-                        handleChange(e)}
-                         else{
-                           toast.warn("Past Date is not Allowed for Booking")
-                         }
-                      }}
+                onChange={(e) => {
+                  const today = new Date().toISOString().split("T")[0];
+                  if (e.target.value >= today) {
+                    handleChange(e);
+                  } else {
+                    toast.warn("Past Date is not Allowed for Booking");
+                  }
+                }}
                 InputLabelProps={{
                   shrink: true,
                 }}
@@ -556,7 +598,7 @@ const handleSaveClick = () => {
                 value={newBooking.adult}
                 onChange={handleChange}
               />
-               <TextField
+              <TextField
                 margin="dense"
                 label="Adult Price"
                 required
@@ -578,7 +620,7 @@ const handleSaveClick = () => {
                 value={newBooking.children}
                 onChange={handleChange}
               />
-               <TextField
+              <TextField
                 margin="dense"
                 label="Children Price"
                 required
@@ -607,7 +649,7 @@ const handleSaveClick = () => {
                 )}
               />
 
-              {newBooking.paymentMethod === "In-house" && (
+              {newBooking.paymentMethod === "room guest" && (
                 <TextField
                   margin="dense"
                   name="referenceId"
@@ -620,6 +662,35 @@ const handleSaveClick = () => {
                   helperText={errors.referenceId}
                 />
               )}
+
+              {newBooking.paymentMethod === "UPI" && (
+                <TextField
+                  margin="dense"
+                  name="upiId"
+                  label="UPI ID"
+                  type="text"
+                  fullWidth
+                  value={newBooking.upiId}
+                  onChange={handleChange}
+                  error={!!errors.upiId}
+                  helperText={errors.upiId}
+                />
+              )}
+
+              {newBooking.paymentMethod === "Card" && (
+                <TextField
+                  margin="dense"
+                  name="creditCardNumber"
+                  label="Card Number"
+                  type="text"
+                  fullWidth
+                  value={newBooking.creditCardNumber}
+                  onChange={handleChange}
+                  error={!!errors.creditCardNumber}
+                  helperText={errors.creditCardNumber}
+                />
+              )}
+
               {newBooking.paymentMethod === "Complementary" && (
                 <Autocomplete
                   options={complementaryPersons}
@@ -658,123 +729,249 @@ const handleSaveClick = () => {
               </Button>
             </DialogActions>
           </Dialog>
-     
 
-       {/* view booking section */}
-          <Dialog open={viewOpen} onClose={handleViewClose} fullWidth maxWidth="sm">
-    <DialogTitle style={{ backgroundColor: "#263238", color: "white" }}>
-      View Booking Details
-    </DialogTitle>
-    <DialogContent>
-      {currentBooking && (
-        <>
-          {currentBooking.plan && (
-            <div
-              style={{
-                height: "10px",
-                backgroundColor:
-                  currentBooking.plan === "Gold"
-                    ? "yellow"
-                    : currentBooking.plan === "Jumbo"
-                    ? "orange"
-                    : "transparent",
-                marginBottom: "10px",
-              }}
-            />
-          )}
+          {/* view booking section */}
+          <Dialog
+            open={viewOpen}
+            onClose={handleViewClose}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle style={{ backgroundColor: "#263238", color: "white" }}>
+              View Booking Details
+            </DialogTitle>
+            <DialogContent>
+              {currentBooking && (
+                <>
+                  {currentBooking.plan && (
+                    <div
+                      style={{
+                        height: "10px",
+                        backgroundColor:
+                          currentBooking.plan === "Gold"
+                            ? "yellow"
+                            : currentBooking.plan === "Jumbo"
+                            ? "orange"
+                            : "transparent",
+                        marginBottom: "10px",
+                      }}
+                    />
+                  )}
 
-          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
-            Personal Information
-          </Typography>
-          <TableContainer component={Paper} style={{ marginBottom: "20px" }}>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Name</TableCell>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.name}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Email</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.userId.email}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Phone</TableCell>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.phone}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>GST Number</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.userId.gstNumber}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Address</TableCell>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.userId.address}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  <Typography
+                    variant="h6"
+                    style={{ marginBottom: "10px", color: "#37474F" }}
+                  >
+                    Personal Information
+                  </Typography>
+                  <TableContainer
+                    component={Paper}
+                    style={{ marginBottom: "20px" }}
+                  >
+                    <Table>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Name
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking.userId?.name}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Email
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.userId?.email}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Phone
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking.userId?.phone}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            GST Number
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.userId?.gstNumber}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Address
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking.userId?.address}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
 
-          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
-            Booking Information
-          </Typography>
-          <TableContainer component={Paper} style={{ marginBottom: "20px" }}>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Booking Date</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                    {new Date(currentBooking.bookingDate).toLocaleDateString("en-GB")}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Adults</TableCell>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.adult}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Children</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.children}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Plan</TableCell>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.planId?.title}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Adult Price</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>₹{currentBooking.adultPrice}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#f5f5f5" }}>Children Price</TableCell>
-                  <TableCell  style={{ backgroundColor: "#f5f5f5" }}>₹{currentBooking.childrenPrice}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  <Typography
+                    variant="h6"
+                    style={{ marginBottom: "10px", color: "#37474F" }}
+                  >
+                    Booking Information
+                  </Typography>
+                  <TableContainer
+                    component={Paper}
+                    style={{ marginBottom: "20px" }}
+                  >
+                    <Table>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Booking Date
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {new Date(
+                              currentBooking.bookingDate
+                            )?.toLocaleDateString("en-GB")}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Adults
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking?.adult}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Children
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking?.children}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Plan
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking.planId?.title}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Adult Price
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            ₹{currentBooking.adultPrice}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Children Price
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            ₹{currentBooking.childrenPrice}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
 
-          <Typography variant="h6" style={{ marginBottom: "10px", color: "#37474F" }}>
-            Payment & Status
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>Payment Method</TableCell>
-                  <TableCell style={{ backgroundColor: "#e0e0e0" }}>{currentBooking.paymentMethod}</TableCell>
-                </TableRow>
-                {/* <TableRow>
+                  <Typography
+                    variant="h6"
+                    style={{ marginBottom: "10px", color: "#37474F" }}
+                  >
+                    Payment & Status
+                  </Typography>
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Payment Method
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.paymentMethod}
+                          </TableCell>
+                        </TableRow>
+                        {currentBooking.upiId && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              UPI ID
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking.upiId}
+                            </TableCell>
+                          </TableRow>
+                        )}
+
+                        {currentBooking.creditCardNumber && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              Card Number
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking.creditCardNumber}
+                            </TableCell>
+                          </TableRow>
+                        )}
+
+                        {currentBooking.referenceId && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              Reference ID
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking.referenceId}
+                            </TableCell>
+                          </TableRow>
+                        )}
+
+                        {currentBooking.complementaryPerson && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              Complementary Person
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking.complementaryPerson}
+                            </TableCell>
+                          </TableRow>
+                        )}
+
+                        {adminRole === "superadmin" && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              Booking done by Admin
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking.bookingViaPerson}
+                            </TableCell>
+                          </TableRow>
+                        )}
+
+                        {/* <TableRow>
                   <TableCell style={{ backgroundColor: "#f5f5f5" }}>Status</TableCell>
                   <TableCell style={{ backgroundColor: "#f5f5f5" }}>{currentBooking.status}</TableCell>
                 </TableRow> */}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </>
-      )}
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={handleViewClose} variant="contained" style={{ backgroundColor: "#263238", color: "white" }}>
-        Close
-      </Button>
-    </DialogActions>
-  </Dialog>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={handleViewClose}
+                variant="contained"
+                style={{ backgroundColor: "#263238", color: "white" }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Dialog open={editOpen} onClose={handleEditClose}>
             <DialogTitle>Edit Booking</DialogTitle>
@@ -884,7 +1081,7 @@ const handleSaveClick = () => {
             </DialogActions>
           </Dialog>
 
-          <Box sx={{ height: '69vh', width: "100%" }}>
+          <Box sx={{ height: "69vh", width: "100%" }}>
             <DataGrid
               rows={filteredBookings}
               columns={columns}

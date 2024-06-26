@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect , useState} from 'react'
 import Sidenav from '../components/Sidenav'
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography'
@@ -8,6 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 const drawerWidth = 240;
 function Home() {
+  const [greeting, setGreeting] = useState('');
   const Navigate = useNavigate();
   useEffect(()=>{checkAuth()},[])
 
@@ -28,6 +29,30 @@ function Home() {
       Navigate('/login');
    }
 }
+
+useEffect(() => {
+  const getGreeting = () => {
+    const currentHour = new Date().getHours();
+
+    if (currentHour < 12) {
+      return 'Hello, Good Morning';
+    } else if (currentHour < 18) {
+      return 'Hello, Good Afternoon';
+    } else {
+      return 'Hello, Good Evening';
+    }
+  };
+
+  setGreeting(getGreeting());
+
+  const timerId = setInterval(() => {
+    setGreeting(getGreeting());
+  }, 60000); // Update the greeting every minute
+
+  return () => clearInterval(timerId);
+}, []);
+
+
   return (
     <>
     <Navbar/>
@@ -40,7 +65,8 @@ function Home() {
         sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
       >
         <Toolbar />
-        <h1>To access the dashboard get premium subscription</h1>
+        <h1>{greeting}{" "}{'👋'}</h1>
+        <h4>To access the dashboard get premium subscription</h4>
       </Box>
     </Box>
     </>

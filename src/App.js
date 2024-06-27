@@ -44,7 +44,7 @@ const App = () => {
   };
 
   return (
-    <Box sx={{ background: "#EEF1FF" , minHeight:'100vh'}}>
+    <Box sx={{ background: "#EEF1FF", minHeight: "100vh" }}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
 
@@ -57,9 +57,9 @@ const App = () => {
         <Route path="/companyprofile" element={<CompanyProfile />} />
 
         <Route path="/approval" element={<ApprovalPage />} />
-        <Route path= "/scanner" element={<ScannerPage/>}/>
-        <Route path="/bookingconfirm" element={<BookingConfirmPage/>}/>
-        <Route path="/addadminchecker" element={<AddUserPage/>}/>
+        <Route path="/scanner" element={<ScannerPage />} />
+        <Route path="/bookingconfirm" element={<BookingConfirmPage />} />
+        <Route path="/addadminchecker" element={<AddUserPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

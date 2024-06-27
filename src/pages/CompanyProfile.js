@@ -55,6 +55,7 @@ export default function CompanyProfile() {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/adminprofile`);
       setFormValues(response.data?.adminprofile[0]);
       setComplementaryPersons(response.data?.adminprofile[0]?.complementaryPersons || []);
+      setPaymentMethods(response.data?.adminprofile[0]?.paymentMethods || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
     }

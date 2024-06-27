@@ -65,7 +65,7 @@ useEffect(() => {
         sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
       >
         <Toolbar />
-        <h1>{greeting}{" "}{'👋'}</h1>
+        <h1> {'👋'}{greeting}{" "}</h1>
         <h4>To access the dashboard get premium subscription</h4>
       </Box>
     </Box>

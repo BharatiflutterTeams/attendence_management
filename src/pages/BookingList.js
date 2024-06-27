@@ -82,8 +82,8 @@ export default function BookingPage() {
   );
   const [plans, setPlans] = useState([]);
 
-  const paymentOptions = [...companyData.paymentMethods];
-  const complementaryPersons = [...companyData.complementaryPersons];
+  const paymentOptions = [...companyData?.paymentMethods];
+  const complementaryPersons = [...companyData?.complementaryPersons];
   //console.log("complementary",companyData.complementaryPersons )
 
   useEffect(() => {
@@ -894,7 +894,7 @@ export default function BookingPage() {
                             Payment Method
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            {currentBooking.paymentMethod}
+                            {currentBooking.paymentMethod ? currentBooking.paymentMethod : "Online Booking"}
                           </TableCell>
                         </TableRow>
                         {currentBooking.upiId && (
@@ -947,7 +947,7 @@ export default function BookingPage() {
                               Booking done by Admin
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.bookingViaPerson}
+                              {currentBooking.bookingViaPerson ? currentBooking.bookingViaPerson :"Self booking by User"}
                             </TableCell>
                           </TableRow>
                         )}

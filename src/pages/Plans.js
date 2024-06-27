@@ -214,7 +214,7 @@ export default function PlansPage() {
   };
 
   const handleAddHighlight = () => {
-    if (newHighlight && currentSubPackage.activities?.length < 5) {
+    if (newHighlight && currentSubPackage.activities?.length < 10) {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
@@ -228,7 +228,7 @@ export default function PlansPage() {
   };
 
   const handleAddAddOn = () => {
-    if (newAddOn && currentSubPackage.addOn.length < 5) {
+    if (newAddOn && currentSubPackage.addOn.length < 10) {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
@@ -779,7 +779,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddHighlight}
-                  disabled={currentSubPackage.activities?.length >= 5}
+                  disabled={currentSubPackage.activities?.length >= 10}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
@@ -825,7 +825,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddAddOn}
-                  disabled={currentSubPackage.addOn?.length >= 5}
+                  disabled={currentSubPackage.addOn?.length >= 10}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState } from 'react';
 import { styled, alpha } from '@mui/material/styles';
 import MuiAppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -14,9 +15,11 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import { Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import useAppStore from '../appStore'
 import { useNavigate } from 'react-router-dom';
+import ContactSupportIcon from '@mui/icons-material/ContactSupport';
 //import { useAuthStore } from '../appStore';
 
 const AppBar = styled(MuiAppBar, {
@@ -38,6 +41,7 @@ export default function Navbar() {
   const updateOpen = useAppStore((state)=>state.updateOpen);
   const dopen = useAppStore((state)=>state.dopen);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
  // const clearToken = useAuthStore((state) => state.clearToken);
 
   const isMenuOpen = Boolean(anchorEl);
@@ -49,6 +53,15 @@ export default function Navbar() {
 
   const handleMobileMenuClose = () => {
     setMobileMoreAnchorEl(null);
+  };  
+  
+  
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
   };
 
   const handleMenuClose = () => {
@@ -105,16 +118,14 @@ const handleLogout=()=>{
       onClose={handleMobileMenuClose}
     >
       <MenuItem>
-        <IconButton
-          size="large"
-          aria-label="show 17 new notifications"
-          color="inherit"
-        >
-          <Badge badgeContent={17} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-        <p>Notifications</p>
+      <Chip
+        icon={<ContactSupportIcon />}
+        label="Support"
+        onClick={handleOpen}
+        clickable
+        color="primary"
+        variant="outlined"
+      />
       </MenuItem>
       <MenuItem onClick={handleProfileMenuOpen}>
         <IconButton
@@ -170,6 +181,15 @@ const handleLogout=()=>{
                 <NotificationsIcon />
               </Badge>
             </IconButton> */}
+         <Chip
+        icon={<ContactSupportIcon color='#ffff' />}
+        label="Support"
+        onClick={handleOpen}
+        
+        clickable
+        sx={{color:'white' , mt:'0.5rem'}}
+        variant="outlined"
+          />
             <IconButton
               size="large"
               edge="end"
@@ -198,6 +218,25 @@ const handleLogout=()=>{
       </AppBar>
       {renderMobileMenu}
       {renderMenu}
+
+       {/*******************supprt dialog *******************************************/}
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle sx={{color:"white", background:'#867AE9'}}>Contact Support</DialogTitle>
+        <DialogContent sx={{mt:"1rem"}}>
+          <DialogContentText>
+            <h3>For assistance, contact us at:</h3>
+            <br />
+            Phone: <strong>9368303030</strong>
+            <br />
+            Email:<strong> prasad.parik@bhartisofttech.com </strong>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

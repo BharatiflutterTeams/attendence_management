@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect , useRef} from "react";
 import {
   Box,
   Button,
@@ -35,17 +35,33 @@ import { ToastContainer, toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import useAppStore from "../appStore";
-//import styles from './BookingList.module.css';
+import Preloader from "../components/Preloader";
+import RemoveIcon from "@mui/icons-material/Remove";
+import ReactToPrint from 'react-to-print';
+import PrintComponent from '../components/PrintComponent';
+import DownloadExcel from "../components/DownloadExcel";
+import styles from "./BookingList.module.css";
+import {
+  AttachMoney as AttachMoneyIcon,
+  Person as PersonIcon,
+  ChildFriendly as ChildIcon,
+} from "@mui/icons-material";
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+
 const drawerWidth = 240;
 
 export default function BookingPage() {
   const Navigate = useNavigate();
   const companyData = useAppStore((state) => state.companyData);
+  const setRowData = useAppStore((state) => state.setRowData);
+  const componentRef = useRef();
+  const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] = useState("");
   const [bookings, setBookings] = useState([]);
   const [page, setPage] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [pageSize, setPageSize] = useState(100);
+  const [pageSize, setPageSize] = useState(1000);
   const [rowCount, setRowCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -55,16 +71,22 @@ export default function BookingPage() {
   const [adminRole, setAdminrole] = useState();
   const [errors, setErrors] = useState({});
   const [currentBooking, setCurrentBooking] = useState(null);
+  const [choosePlan, setChoosePlan] = useState({});
+  const [totalAdultPrice, setTotalAdultPrice] = useState(0);
+  const [totalChildPrice, setTotalChildPrice] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [selectedSubPackageIndex, setSelectedSubPackageIndex] = useState(0);
   const [newBooking, setNewBooking] = useState({
     name: "",
     email: "",
     phone: "",
     planId: "",
+    selectedSubPackage: 0,
     gstNumber: "",
     address: "",
     bookingDate: new Date().toISOString().split("T")[0],
-    adult: "",
-    children: "",
+    adult: 1,
+    children: 0,
     paymentMethod: "",
     referenceId: "",
     complementaryPerson: "",
@@ -73,6 +95,7 @@ export default function BookingPage() {
     upiId: "",
     creditCardNumber: "",
     bookingViaPerson: adminName,
+    subpackageName: "",
   });
 
   // const [fromDate, setFromDate] = useState(new Date().toISOString().split("T")[0]);
@@ -83,13 +106,55 @@ export default function BookingPage() {
   const [plans, setPlans] = useState([]);
 
   const paymentOptions = [...companyData?.paymentMethods];
-  const complementaryPersons = [...companyData?.complementaryPersons];
+  const complementaryPersons =
+    companyData?.complementaryPersons?.map((person) => person.name) || [];
   //console.log("complementary",companyData.complementaryPersons )
+
+  const today = new Date();
+
+  // Calculate the date 7 days ago
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 7);
+
+  const calculateTotal = (adultCount, childCount) => {
+    let adultPrice = 0;
+    let childPrice = 0;
+  
+    if (choosePlan.subpackages) {
+      adultPrice =
+        choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price || 0;
+      childPrice =
+        choosePlan?.subpackages[selectedSubPackageIndex]?.child_price || 0;
+    }
+  
+    const totalAdultAmount = adultCount * adultPrice;
+    const totalChildAmount = childCount * childPrice;
+  
+    // Calculate the total amount before GST
+    const totalBeforeGST = totalAdultAmount + totalChildAmount;
+  
+    // Calculate the GST amount
+    const gstAmount = totalBeforeGST * 0.18;
+  
+    // Calculate the total amount including GST and round it off
+    const totalAmountWithGST = Math.round(totalBeforeGST + gstAmount);
+  
+    // Round off individual amounts if needed
+    const roundedTotalAdultAmount = Math.round(totalAdultAmount);
+    const roundedTotalChildAmount = Math.round(totalChildAmount);
+  
+    setTotalAdultPrice(roundedTotalAdultAmount);
+    setTotalChildPrice(roundedTotalChildAmount);
+    setTotalAmount(totalAmountWithGST);
+  };
+  
+  
 
   useEffect(() => {
     fetchBookings();
     fetchPlans();
-  }, [page, pageSize, selectedDate]);
+    calculateTotal(newBooking.adult, newBooking.children);
+  }, [page, pageSize, selectedDate, choosePlan, selectedSubPackageIndex]);
 
   useEffect(() => {
     checkAuth();
@@ -117,12 +182,6 @@ export default function BookingPage() {
     }
   };
 
-  useEffect(() => {
-    if (adminName) {
-      console.log("adminName", adminName);
-    }
-  }, [adminName]);
-
   const fetchBookings = async () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) {
@@ -141,8 +200,11 @@ export default function BookingPage() {
       setBookings(response.data.bookings);
       console.log("bookings", response.data.bookings);
       setRowCount(response.data.total);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching bookings:", error);
+      setLoading(true);
+      alert("Error in loading bookings");
     }
   };
 
@@ -150,25 +212,35 @@ export default function BookingPage() {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
       setPlans(response.data.plan);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching plans:", error);
+      setLoading(true);
+      alert("Error in loading This page");
     }
   };
+
+  //loader****************************//
+  if (loading) {
+    return <Preloader />;
+  }
+  //************************************ */
 
   // const handleDateChange = (event) => {
   //   setSelectedDate(event.target.value);
   // };
   const handleDateChange = (event) => {
     const inputDate = event.target.value;
-    const today = new Date().toISOString().split("T")[0];
 
     // Check if the entered date is before today
-    if (inputDate >= today) {
+    if (inputDate >= sevenDaysAgo.toISOString().split("T")[0]) {
       setSelectedDate(inputDate);
     } else {
       // Optionally, show an error message or alert to the user
       //alert("Date cannot be before today");
-      toast.info("Date cannot be before today", { position: "top-center" });
+      toast.info("Please select a date within the last 7 days.", {
+        position: "top-center",
+      });
     }
   };
 
@@ -181,7 +253,13 @@ export default function BookingPage() {
   };
 
   const handleSave = async () => {
-    const finalBooking = { ...newBooking, bookingViaPerson: adminName };
+    const finalBooking = {
+      ...newBooking,
+      bookingViaPerson: adminName,
+      adultPrice: totalAdultPrice,
+      childrenPrice: totalChildPrice,
+    };
+    console.log("finalBooking", finalBooking);
     try {
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/admin/postbooking`,
@@ -195,11 +273,12 @@ export default function BookingPage() {
         email: "",
         phone: "",
         planId: "",
+        selectedSubPackage: 0,
         gstNumber: "",
         address: "",
         bookingDate: new Date().toISOString().split("T")[0],
-        adult: "",
-        children: "",
+        adult: 1,
+        children: 0,
         paymentMethod: "",
         referenceId: "",
         complementaryPerson: "",
@@ -208,8 +287,10 @@ export default function BookingPage() {
         upiId: "",
         creditCardNumber: "",
         bookingViaPerson: adminName,
+        subpackageName: "",
       });
       handleClose();
+      toast.success("Booking done Successfully");
     } catch (error) {
       console.error("Error saving booking:", error);
     }
@@ -220,8 +301,56 @@ export default function BookingPage() {
     setNewBooking({ ...newBooking, [name]: value });
   };
 
+
+
+ 
+  const handleAdultCountChange = (value) => {
+    setNewBooking((prev) => {
+      const updatedBooking = { ...prev, adult: value };
+      calculateTotal(updatedBooking.adult, updatedBooking.children);
+      return updatedBooking;
+    });
+  };
+
+  
+
   const handlePlanChange = (event, newValue) => {
     setNewBooking({ ...newBooking, planId: newValue?._id || "" });
+    setChoosePlan(newValue);
+  };
+
+  const handleChildCountChange = (value) => {
+    setNewBooking((prev) => {
+      const updatedBooking = { ...prev, children: value };
+      calculateTotal(updatedBooking.adult, updatedBooking.children);
+      return updatedBooking;
+    });
+  };
+
+  const handleSubPackageChange = (event, newValue) => {
+    if (newValue) {
+      const selectedIndex = choosePlan?.subpackages?.findIndex(
+        (subpackage) => subpackage.name === newValue.name
+      );
+      const subpackageName = choosePlan?.subpackages[selectedIndex].name;
+
+      console.log("selected sub package", subpackageName);
+      // console.log("slected package", newValue);
+      if (subpackageName) {
+        setNewBooking({
+          ...newBooking,
+          selectedSubPackage: selectedIndex,
+          subpackageName: subpackageName,
+        });
+      }
+
+      setSelectedSubPackageIndex(selectedIndex);
+    } else {
+      setNewBooking({
+        ...newBooking,
+        selectedSubPackage: 0,
+      });
+    }
   };
 
   const handlePaymentChange = (event, newValue) => {
@@ -241,7 +370,16 @@ export default function BookingPage() {
     setAnchorEl(null);
     setCurrentBooking(null);
   };
-
+  ///////////Printing logic//////////
+  const handlePrintOpen = (row) => {
+    setRowData(row);
+    console.log("row", row);
+    setTimeout(() => {
+      document.getElementById("print-button").click();
+    }, 500);
+    handleMenuClose();
+  };
+///////////////////////////////////////////
   const handleViewOpen = () => {
     setViewOpen(true);
   };
@@ -313,10 +451,11 @@ export default function BookingPage() {
       width: 200,
       valueGetter: (params) => params?.name || "Unknown",
     },
+
     {
       field: "planId",
       headerName: "Plan",
-      width: 500,
+      width: 300,
       valueGetter: (params) => params?.title || "Unknown",
     },
     { field: "adult", headerName: "Adult", width: 100 },
@@ -344,10 +483,23 @@ export default function BookingPage() {
             open={Boolean(anchorEl) && currentBooking === params.row}
             onClose={handleMenuClose}
           >
-            <MenuItem onClick={handleViewOpen}>View details</MenuItem>
+            <MenuItem onClick={handleViewOpen}>View Details</MenuItem>
+            <MenuItem onClick={() => handlePrintOpen(currentBooking)}>
+              Print Details
+            </MenuItem>
             {/* <MenuItem onClick={handleEditOpen}>Edit</MenuItem>
             <MenuItem onClick={handleDeleteOpen}>Delete</MenuItem> */}
           </Menu>
+           {/* Hidden print button for triggering print */}
+      <ReactToPrint
+        trigger={() => <button id="print-button" style={{ display: 'none' }}>Print</button>}
+        content={() => componentRef.current}
+      />
+
+      {/* Hidden PrintComponent */}
+      <div style={{ display: 'none' }}>
+        <PrintComponent ref={componentRef} />
+      </div>
         </>
       ),
     },
@@ -361,6 +513,7 @@ export default function BookingPage() {
     if (!newBooking.name) {
       newErrors.name = "Name is Invalid";
     }
+
     if (newBooking.email && !/\S+@\S+\.\S+/.test(newBooking.email)) {
       newErrors.email = "Email is invalid";
     }
@@ -370,11 +523,11 @@ export default function BookingPage() {
     ) {
       newErrors.phone = "Phone number must be between 10 and 15 digits";
     }
-    if (newBooking.paymentMethod === "room guest" && !newBooking.referenceId) {
+    if (newBooking.paymentMethod === "Room Guest" && !newBooking.referenceId) {
       newErrors.referenceId = "Reference ID is required for room guest payment";
     }
     if (
-      newBooking.paymentMethod === "Complementary" &&
+      newBooking.paymentMethod === "Non Chargeable" &&
       !newBooking.complementaryPerson
     ) {
       newErrors.complementaryPerson = "Complementary person is required";
@@ -439,12 +592,13 @@ export default function BookingPage() {
                   type="date"
                   value={selectedDate}
                   onChange={handleDateChange}
+                  sx={{ background: "#ffff" }}
                   inputProps={{
-                    min: new Date().toISOString().split("T")[0],
+                    min: sevenDaysAgo.toISOString().split("T")[0],
                   }}
                   size="small"
                 />
-
+                 
                 <Autocomplete
                   options={plans}
                   getOptionLabel={(option) => option.title}
@@ -456,11 +610,15 @@ export default function BookingPage() {
                       {...params}
                       label="Filter by Plan"
                       variant="outlined"
-                      sx={{ width: 300, ml: 3 }}
+                      sx={{ width: 300, ml: 3, background: "#ffff" }}
                     />
                   )}
                 />
               </div>
+
+                <DownloadExcel bookings={bookings}/> 
+                {/* Download Excel button */}
+
               <Button
                 variant="contained"
                 style={{
@@ -479,8 +637,34 @@ export default function BookingPage() {
 
           {/* ADD booking form */}
           <Dialog open={open} onClose={handleClose}>
-            <DialogTitle sx={{ background: "#867AE9", color: "white" }}>
-              Add Booking
+            <DialogTitle
+              sx={{
+                background: "#867AE9",
+                color: "white",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="h6">Add Booking</Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box className={styles.priceBox}>
+                  <PersonOutlineIcon sx={{ fontSize: 18, marginRight: 1 }} />
+                  <Typography>₹{totalAdultPrice}</Typography>
+                </Box>
+                <Box className={styles.priceBox}>
+                  <ChildCareIcon sx={{ fontSize: 18, marginRight: 1 }} />
+
+                  <Typography>₹{totalChildPrice}</Typography>
+                </Box>
+                <Box className={styles.totalBox}>
+                  <Typography variant="body2">
+                    Total:₹ {totalAmount} (Inc.all taxes)
+                  </Typography>
+                </Box>
+              </Box>
             </DialogTitle>
             <DialogContent>
               <DialogContentText>
@@ -544,6 +728,27 @@ export default function BookingPage() {
                 )}
               />
 
+              <Autocomplete
+                options={choosePlan?.subpackages || []}
+                getOptionLabel={(option) => option?.name || ""}
+                onError={!!errors.selectedSubPackage}
+                helperText={errors.selectedSubPackage}
+                value={
+                  choosePlan?.subpackages?.[newBooking.selectedSubPackage] ||
+                  null
+                }
+                onChange={handleSubPackageChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Sub Package"
+                    margin="dense"
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
               <TextField
                 margin="dense"
                 label="GST Number"
@@ -587,50 +792,65 @@ export default function BookingPage() {
                   min: new Date().toISOString().split("T")[0],
                 }}
               />
-              <TextField
-                margin="dense"
-                label="Adults"
-                required
-                fullWidth
-                variant="outlined"
-                name="adult"
-                type="number"
-                value={newBooking.adult}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="dense"
-                label="Adult Price"
-                required
-                fullWidth
-                variant="outlined"
-                name="adultPrice"
-                type="number"
-                value={newBooking.adultPrice}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="dense"
-                label="Children"
-                required
-                fullWidth
-                variant="outlined"
-                name="children"
-                type="number"
-                value={newBooking.children}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="dense"
-                label="Children Price"
-                required
-                fullWidth
-                variant="outlined"
-                name="childrenPrice"
-                type="number"
-                value={newBooking.childrenPrice}
-                onChange={handleChange}
-              />
+
+              <div>
+                <Box className={styles.counterContainer}>
+                  <Typography variant="h7" className={styles.counterLabel}>
+                    Adults
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Button
+                      className={styles.counterButton}
+                      onClick={() =>
+                        handleAdultCountChange(
+                          Math.max(newBooking.adult - 1, 1)
+                        )
+                      }
+                    >
+                      <RemoveIcon />
+                    </Button>
+                    <Typography variant="body1" className={styles.counterValue}>
+                      {newBooking.adult || 0}
+                    </Typography>
+                    <Button
+                      className={styles.counterButton}
+                      onClick={() =>
+                        handleAdultCountChange(newBooking.adult + 1)
+                      }
+                    >
+                      <AddIcon />
+                    </Button>
+                  </Box>
+                </Box>
+                <Box className={styles.counterContainer}>
+                  <Typography variant="h7" className={styles.counterLabel}>
+                    Children
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Button
+                      className={styles.counterButton}
+                      onClick={() =>
+                        handleChildCountChange(
+                          Math.max(newBooking.children - 1, 0)
+                        )
+                      }
+                    >
+                      <RemoveIcon />
+                    </Button>
+                    <Typography variant="body1" className={styles.counterValue}>
+                      {newBooking.children || 0}
+                    </Typography>
+                    <Button
+                      className={styles.counterButton}
+                      onClick={() =>
+                        handleChildCountChange(newBooking.children + 1)
+                      }
+                    >
+                      <AddIcon />
+                    </Button>
+                  </Box>
+                </Box>
+              </div>
 
               <Autocomplete
                 options={paymentOptions}
@@ -649,11 +869,11 @@ export default function BookingPage() {
                 )}
               />
 
-              {newBooking.paymentMethod === "room guest" && (
+              {newBooking.paymentMethod === "Room Guest" && (
                 <TextField
                   margin="dense"
                   name="referenceId"
-                  label="Reference ID"
+                  label="Reference ID/Room Number"
                   type="text"
                   fullWidth
                   value={newBooking.referenceId}
@@ -681,7 +901,7 @@ export default function BookingPage() {
                 <TextField
                   margin="dense"
                   name="creditCardNumber"
-                  label="Card Number"
+                  label="RNN Number"
                   type="text"
                   fullWidth
                   value={newBooking.creditCardNumber}
@@ -691,7 +911,7 @@ export default function BookingPage() {
                 />
               )}
 
-              {newBooking.paymentMethod === "Complementary" && (
+              {newBooking.paymentMethod === "Non Chargeable" && (
                 <Autocomplete
                   options={complementaryPersons}
                   getOptionsLabel={(option) => option}
@@ -701,7 +921,7 @@ export default function BookingPage() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Complementary Person"
+                      label="Complementary via Person"
                       margin="dense"
                       fullWidth
                       error={!!errors.complementaryPerson}
@@ -827,6 +1047,14 @@ export default function BookingPage() {
                     <Table>
                       <TableBody>
                         <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Booking ID
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {currentBooking._id}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                             Booking Date
                           </TableCell>
@@ -894,7 +1122,9 @@ export default function BookingPage() {
                             Payment Method
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            {currentBooking.paymentMethod ? currentBooking.paymentMethod : "Online Booking"}
+                            {currentBooking.paymentMethod
+                              ? currentBooking.paymentMethod
+                              : "Online Booking"}
                           </TableCell>
                         </TableRow>
                         {currentBooking.upiId && (
@@ -911,7 +1141,7 @@ export default function BookingPage() {
                         {currentBooking.creditCardNumber && (
                           <TableRow>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              Card Number
+                              RNN Number
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking.creditCardNumber}
@@ -922,7 +1152,7 @@ export default function BookingPage() {
                         {currentBooking.referenceId && (
                           <TableRow>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              Reference ID
+                              Reference ID/Room Number
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking.referenceId}
@@ -933,7 +1163,7 @@ export default function BookingPage() {
                         {currentBooking.complementaryPerson && (
                           <TableRow>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              Complementary Person
+                              Approved By
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking.complementaryPerson}
@@ -944,10 +1174,12 @@ export default function BookingPage() {
                         {adminRole === "superadmin" && (
                           <TableRow>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              Booking done by Admin
+                              Booking done by
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.bookingViaPerson ? currentBooking.bookingViaPerson :"Self booking by User"}
+                              {currentBooking.bookingViaPerson
+                                ? currentBooking.bookingViaPerson
+                                : "Atithi booking engine"}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1093,7 +1325,7 @@ export default function BookingPage() {
               onPageChange={(newPage) => setPage(newPage)}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               getRowId={(row) => row._id}
-              sx={{ background: "#f7f5fa" }}
+              sx={{ background: "#ffffff" }}
               //getRowId={(row) => row._id}
             />
           </Box>

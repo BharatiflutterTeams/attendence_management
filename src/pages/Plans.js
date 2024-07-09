@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React  from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
   Typography,
   Snackbar,
   Alert,
+   Grid,
   Collapse,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -26,7 +27,18 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import endpoints from "../Endpoints/endpoint";
+import Preloader from "../components/Preloader";
+import TimeInput from "../components/TimeInput";
 import { toast } from "react-toastify";
+import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { useEffect } from "react";
+dayjs.extend(isBetween);
+dayjs.extend(advancedFormat);
 
 const drawerWidth = 240;
 
@@ -38,6 +50,7 @@ export default function PlansPage() {
   const [newPlan, setNewPlan] = React.useState({
     title: "",
     description: "",
+    timing :"",
     //adult_price: "",
     //child_price: "",
     subpackages: [],
@@ -55,6 +68,7 @@ export default function PlansPage() {
   const [search, setSearch] = React.useState("");
   const [newLink, setNewLink] = React.useState("");
   const [newHighlight, setNewHighlight] = React.useState("");
+  const [newChildActivities , setNewChildActivities] = React.useState("");
   const [newAddOn, setNewAddOn] = React.useState("");
   //const [adultPoint , setAdultPoint] = React.useState("");
   //const [childPoint , setChildPoint] = React.useState("");
@@ -63,13 +77,25 @@ export default function PlansPage() {
   const [errors, setErrors] = React.useState({});
   const [subPackages, setsubPackages] = React.useState([]);
   const [subPackageDialogOpen, setSubPackageDialogOpen] = React.useState(false);
+  const [loading , setLoading] = React.useState(true);
+  //const [fromTime, setFromTime] = React.useState({ time: '07:30', period: 'AM' });
+  //const [toTime, setToTime] = React.useState({ time: '05:30', period: 'PM' });
   const [currentSubPackage, setCurrentSubPackage] = React.useState({
     name: "",
     adult_price: "",
     child_price: "",
-    activities: [],
+    adult_activities: [],
+    child_activities : [],
     addOn: [],
   });
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editIndex, setEditIndex] = React.useState(null);
+  const[adminRole , setAdminRole] = React.useState();
+  const [fromTime, setFromTime] = React.useState(dayjs());
+  const [toTime, setToTime] = React.useState(dayjs());
+  // const [fromPeriod, setFromPeriod] = React.useState('AM');
+  // const [toPeriod, setToPeriod] = React.useState('PM');
+  
 
   React.useEffect(() => {
     fetchPlans();
@@ -77,12 +103,29 @@ export default function PlansPage() {
     checkAuth();
   }, []);
 
+  
+
+  useEffect(() => {
+    if (selectedPlan) {
+      const fromDate = dayjs();
+      const [fromHours, fromMinutes] = selectedPlan?.timing?.fromtime.split(':').map(Number);
+      
+      setFromTime(fromDate.hour(fromHours).minute(fromMinutes));
+
+      const toDate = dayjs();
+      const [toHours, toMinutes] = selectedPlan?.timing?.totime.split(':').map(Number);
+     
+      setToTime(toDate.hour(toHours).minute(toMinutes));
+    }
+  }, [selectedPlan]);
+
   const checkAuth = () => {
     const token = sessionStorage.getItem("jwtToken");
 
     if (token && token !== "" && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
+      setAdminRole(role);
       if (role == "checker") {
         Navigate("/scanner");
       }
@@ -96,8 +139,12 @@ export default function PlansPage() {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
       setPlans(response.data.plan);
+      console.log("incoming plans", response.data.plan);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching plans:", error);
+      setLoading(true);
+      alert("Something Went Wrong")
     }
   };
 
@@ -107,10 +154,17 @@ export default function PlansPage() {
         `${endpoints.serverBaseURL}/api/coupons`
       );
       setCoupons(response.data.coupons);
+
     } catch (error) {
       console.error("Error fetching coupons:", error);
     }
   };
+
+  //loader****************************//
+  if(loading){
+    return <Preloader/>
+  }
+  //************************************ */
 
   const handleOpen = () => {
     setOpen(true);
@@ -122,6 +176,16 @@ export default function PlansPage() {
   };
 
   const handleSave = async () => {
+      
+       setNewPlan({
+         ...newPlan,
+         timing: {
+           fromtime: fromTime.format("HH:mm"),
+           fromperiod: fromTime.hour() >= 12 ? "PM" : "AM",
+           totime: toTime.format("HH:mm"),
+           toperiod: toTime.hour() >= 12 ? "PM" : "AM",
+         },
+       });
     try {
       if (selectedPlan) {
         await axios.put(
@@ -135,6 +199,8 @@ export default function PlansPage() {
       setNewPlan({
         title: "",
         description: "",
+         fromTime:{},
+         toTime:{},
         //adult_price: "",
         //child_price: "",
         subpackages: [],
@@ -191,17 +257,14 @@ export default function PlansPage() {
   const handleHighlightChange = (event) => {
     setNewHighlight(event.target.value);
   };
+
+  const handleChildActivitiesChange = (event) =>{
+    setNewChildActivities(event.target.value);
+  }
   const handleAddOnChange = (event) => {
     setNewAddOn(event.target.value);
   };
 
-  //   const handleAdultGoldChange = (event)=>{
-  //      setAdultPoint(event.target.value);
-  //   }
-
-  //   const handleChildGoldChange = (event)=>{
-  //     setChildPoint(event.target.value);
-  //  }
 
   const handleAddLink = () => {
     if (newLink && newPlan.image_list.length < 5) {
@@ -214,13 +277,27 @@ export default function PlansPage() {
   };
 
   const handleAddHighlight = () => {
-    if (newHighlight && currentSubPackage.activities?.length < 10) {
+    if (newHighlight && currentSubPackage.adult_activities?.length < 15) {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
-        activities: [...currentSubPackage.activities, newHighlight],
+        adult_activities: [...currentSubPackage.adult_activities, newHighlight],
       });
       setNewHighlight("");
+    } else {
+      setSnackbarMessage("Only 5 image links are allowed");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleAddChildActivities = () => {
+    if (newChildActivities && currentSubPackage.child_activities?.length < 15) {
+      //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
+      setCurrentSubPackage({
+        ...currentSubPackage,
+        child_activities: [...currentSubPackage.child_activities, newChildActivities],
+      });
+      setNewChildActivities("");
     } else {
       setSnackbarMessage("Only 5 image links are allowed");
       setSnackbarOpen(true);
@@ -242,25 +319,7 @@ export default function PlansPage() {
     }
   };
 
-  // const handleAddAdultPoint = ()=>{
-  //   if (adultPoint && newPlan.adult_gold_package.length < 5) {
-  //     setNewPlan({ ...newPlan, adult_gold_package: [...newPlan.adult_gold_package, adultPoint] });
-  //     setAdultPoint("");
-  //   } else {
-  //     setSnackbarMessage("Only 5 points are allowed");
-  //     setSnackbarOpen(true);
-  //   }
-  // }
-
-  // const handleAddChildPoint = ()=>{
-  //   if (childPoint && newPlan.child_gold_package.length < 5) {
-  //     setNewPlan({ ...newPlan, child_gold_package: [...newPlan.child_gold_package, childPoint] });
-  //     setAdultPoint("");
-  //   } else {
-  //     setSnackbarMessage("Only 5 points are allowed");
-  //     setSnackbarOpen(true);
-  //   }
-  // }
+  
 
   const handleRemoveLink = (index) => {
     const updatedLinks = newPlan.image_list.filter((_, i) => i !== index);
@@ -268,13 +327,24 @@ export default function PlansPage() {
   };
 
   const handleRemoveHighlights = (index) => {
-    const updatedHighlights = currentSubPackage.activities.filter(
+    const updatedHighlights = currentSubPackage.child_activities.filter(
       (_, i) => i !== index
     );
     //setNewPlan({ ...newPlan, activities: updatedHighlights });
     setCurrentSubPackage({
       ...currentSubPackage,
-      activities: updatedHighlights,
+      child_activities: updatedHighlights,
+    });
+  };
+
+  const handleRemoveChildActivities = (index) => {
+    const updatedChildActivities = currentSubPackage.child_activities.filter(
+      (_, i) => i !== index
+    );
+    //setNewPlan({ ...newPlan, activities: updatedHighlights });
+    setCurrentSubPackage({
+      ...currentSubPackage,
+      child_activities: updatedChildActivities,
     });
   };
 
@@ -352,9 +422,11 @@ export default function PlansPage() {
       name: "",
       adult_price: "",
       child_price: "",
-      activities: [],
+      adult_activities: [],
+      child_activities : [],
       addOn: [],
     });
+    setIsEditing(false);
     setSubPackageDialogOpen(true);
   };
 
@@ -364,13 +436,20 @@ export default function PlansPage() {
   };
 
   const handleSaveSubPackage = () => {
-    const upadatedSubPackages = [...newPlan.subpackages , currentSubPackage]
-    //setsubPackages(upadatedSubPackages);
-    console.log("current booking" , currentSubPackage);
-    console.log("final subPackages array" , upadatedSubPackages);
-    setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
+    if(isEditing){
+         const upadatedSubPackages = newPlan.subpackages.map((subPackage,index)=>(
+           index === editIndex ? currentSubPackage : subPackage
+         ))
+         setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
+    }else{
+      const upadatedSubPackages = [...newPlan.subpackages , currentSubPackage]
+      setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
+    }
+
     setSubPackageDialogOpen(false);
     setCurrentSubPackage({});
+    setIsEditing(false);
+    setEditIndex(null);
   };
 
   const handleRemoveSubPackage = (index) => {
@@ -378,7 +457,13 @@ export default function PlansPage() {
     setsubPackages(newSubPackages);
     setNewPlan({...newPlan, subpackages: newSubPackages});
   };
-
+  
+  const handleEditSubPackage = (index) => {
+    setCurrentSubPackage(newPlan.subpackages[index]);
+    setEditIndex(index);
+    setIsEditing(true);
+    setSubPackageDialogOpen(true);
+  };
   //******************************************** */
   const filteredPlans = plans.filter(
     (plan) =>
@@ -425,7 +510,7 @@ export default function PlansPage() {
               }}
             />
 
-            <Button
+            {adminRole === 'superadmin' && <Button
               variant="contained"
               style={{
                 background: "#ffffff",
@@ -437,7 +522,7 @@ export default function PlansPage() {
               startIcon={<AddIcon />}
             >
               Add Plan
-            </Button>
+            </Button>}
           </Box>
 
           {/* add plan dialog */}
@@ -467,14 +552,42 @@ export default function PlansPage() {
                 label="Description"
                 required
                 fullWidth
+                multiline
+                rows={3}
                 variant="outlined"
                 name="description"
                 value={newPlan.description}
                 onChange={handleChange}
                 error={!!errors.description}
-                helperText={errors.description}
-                inputProps={{ maxLength: 200 }}
+                //helperText={errors.description}
+                inputProps={{ minLength: 70,maxLength: 200 }}
+                helperText={errors.description ? errors.description : `${newPlan?.description?.length}/200`}
               />
+
+              
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Grid container spacing={1} sx={{mt:'0.1rem', mb:'0.5rem'}}>
+            <Grid item xs={6}>
+              <MobileTimePicker
+                label="From Time"
+                value={fromTime}
+                onChange={setFromTime}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+                ampm
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <MobileTimePicker
+                label="To Time"
+                value={toTime}
+                onChange={setToTime}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+                ampm
+              />
+            </Grid>
+          </Grid>
+        </LocalizationProvider>
+              
               {/* <TextField
                 margin="dense"
                 label="Adult Price"
@@ -518,19 +631,25 @@ export default function PlansPage() {
                     <CardContent>
                       <Typography variant="h6">{subPackage.name}</Typography>
                       <Typography variant="body2">
-                        Adult Price :{subPackage.adult_price}
+                        <span style={{fontWeight:'bold'}}>Adult Price :</span>{subPackage.adult_price}
                       </Typography>
                       <Typography variant="body2">
-                        Child Price: {subPackage.child_price}
+                      <span style={{fontWeight:'bold'}}> Child Price: </span>{subPackage.child_price}
                       </Typography>
                       <Typography varaint="body2">
-                        Highlights: {subPackage.activities.join(", ")}
+                      <span style={{fontWeight:'bold'}}>Adult_Activities: </span> {subPackage.adult_activities.join(", ")}
                       </Typography>
                       <Typography varaint="body2">
-                        Add-Ons:{subPackage.addOn.join(", ")}
+                      <span style={{fontWeight:'bold'}}>Child_Activities: </span> {subPackage.child_activities.join(", ")}
+                      </Typography>
+                      <Typography varaint="body2">
+                      <span style={{fontWeight:'bold'}}>Add-Ons: </span>{subPackage.addOn.join(", ")}
                       </Typography>
                     </CardContent>
                     <CardActions>
+                    <Button onClick={() => handleEditSubPackage(index)} variant="text" size="small">
+                        Edit
+                   </Button>
                       <Button
                         onClick={() => handleRemoveSubPackage(index)}
                         varaint="outlined"
@@ -702,6 +821,7 @@ export default function PlansPage() {
                 )}
               />
             </DialogContent>
+            
             <DialogActions>
               <Button
                 onClick={handleClose}
@@ -718,6 +838,7 @@ export default function PlansPage() {
                 Save
               </Button>
             </DialogActions>
+            
           </Dialog>
 
           {/* sub package dialog */}
@@ -728,13 +849,13 @@ export default function PlansPage() {
             }}
           >
             <DialogTitle sx={{ background: "#867AE9", color: "white" }}>
-              Add Sub Package
+               {isEditing ? "Edit Sub Package" : "Add Sub Package"}
             </DialogTitle>
             <DialogContent>
               <TextField
                 autoFocus
                 margin="sub Package Name"
-                label="Sub Pacckage Name "
+                label="Sub Package Name "
                 fullWidth
                 variant="outlined"
                 name="name"
@@ -770,7 +891,7 @@ export default function PlansPage() {
               >
                 <TextField
                   margin="dense"
-                  label="Highlights"
+                  label="Adult Activities"
                   fullWidth
                   size="small"
                   variant="outlined"
@@ -779,16 +900,16 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddHighlight}
-                  disabled={currentSubPackage.activities?.length >= 10}
+                  disabled={currentSubPackage.adult_activities?.length >= 10}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
                 >
-                  Add Highlights
+                  Add Adult Activities
                 </Button>
               </Box>
               <Box>
-                {currentSubPackage.activities?.map((activity, index) => (
+                {currentSubPackage.adult_activities?.map((activity, index) => (
                   <Box
                     key={index}
                     sx={{
@@ -802,6 +923,54 @@ export default function PlansPage() {
                     </Typography>
                     <Button
                       onClick={() => handleRemoveHighlights(index)}
+                      variant="outlined"
+                      size="small"
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+
+              <Box
+                sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}
+              >
+                <TextField
+                  margin="dense"
+                  label="Child Activities"
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  value={newChildActivities}
+                  onChange={handleChildActivitiesChange}
+                />
+                <Button
+                  onClick={handleAddChildActivities}
+                  disabled={currentSubPackage.child_activities?.length >= 10}
+                  variant="outlined"
+                  size="small"
+                  sx={{ ml: "10px", mt: "5px", height: "40px" }}
+                >
+                  Add Child Activities
+                </Button>
+              </Box>
+
+
+              <Box>
+                {currentSubPackage.child_activities?.map((activity, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      marginBottom: 1,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {index + 1}) {activity}
+                    </Typography>
+                    <Button
+                      onClick={() => handleRemoveChildActivities(index)}
                       variant="outlined"
                       size="small"
                     >
@@ -972,10 +1141,14 @@ export default function PlansPage() {
                           .map((subpackage, index) => subpackage.name)
                           .join(", ")}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography varaint="body2" color="text.secondary">
+                        <strong>Timing: </strong>
+                        {plan.timing?.fromtime} {plan.timing?.fromperiod} to {plan.timing?.totime} {plan.timing?.toperiod}
+                      </Typography>
+                      {/* <Typography variant="body2" color="text.secondary">
                         <strong>Image Links: </strong>{" "}
                         {plan.image_list.join(", ")}
-                      </Typography>
+                      </Typography> */}
                       <Typography variant="body2" color="text.secondary">
                         <strong>Coupons: </strong>{" "}
                         {plan.plan_coupon
@@ -984,6 +1157,7 @@ export default function PlansPage() {
                       </Typography>
                     </Box>
                   </CardContent>
+                  { adminRole === 'superadmin' &&
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
                   >
@@ -1005,6 +1179,7 @@ export default function PlansPage() {
                       Delete
                     </Button>
                   </Box>
+                   }
                 </Box>
               </Card>
             ))}

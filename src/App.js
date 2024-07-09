@@ -18,13 +18,16 @@ import AddUserPage from "./pages/AddUserPage";
 //import {ROLES} from './config/roles'
 import axios from "axios";
 import useAppStore from "./appStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import endpoints from "./Endpoints/endpoint";
 import PlansPage from "./pages/dumyPage";
 import ScannerPage from "./pages/ScannerPage";
 import BookingConfirmPage from "./pages/BookingConfirmPage";
+import Preloader from "./components/Preloader";
+import ReportPage from "./pages/ReportPage";
 
 const App = () => {
+  const [loading, setLoading] = useState(true);
   const setCompanyData = useAppStore((state) => state.setCompanyData);
 
   useEffect(() => {
@@ -38,11 +41,16 @@ const App = () => {
       );
 
       setCompanyData(response.data?.adminprofile[0]);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching plans:", error);
+      setLoading(true);
+      alert("Something Went Wrong");
     }
   };
-
+  if (loading) {
+    return <Preloader />;
+  }
   return (
     <Box sx={{ background: "#EEF1FF", minHeight: "100vh" }}>
       <Routes>
@@ -55,7 +63,7 @@ const App = () => {
         <Route path="/coupons" element={<CouponsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/companyprofile" element={<CompanyProfile />} />
-
+        <Route path="/reportpage" element={<ReportPage/>}/>
         <Route path="/approval" element={<ApprovalPage />} />
         <Route path="/scanner" element={<ScannerPage />} />
         <Route path="/bookingconfirm" element={<BookingConfirmPage />} />

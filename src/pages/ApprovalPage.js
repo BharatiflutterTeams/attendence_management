@@ -10,6 +10,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import endpoints from '../Endpoints/endpoint';
+import Preloader from "../components/Preloader";
 
 const drawerWidth = 240;
 
@@ -22,9 +23,9 @@ export default function ApprovalPage() {
   const [pageSize, setPageSize] = useState(10); // Default page size
   const [page, setPage] = useState(1);
   const [rowCount, setRowCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
   useEffect(() => {
     checkAuth();
     fetchBookings();
@@ -49,7 +50,7 @@ export default function ApprovalPage() {
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
+      
       const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/booking`, {
         params: { page, pageSize, date: selectedDate }
       });
@@ -60,9 +61,13 @@ export default function ApprovalPage() {
     } catch (error) {
       console.error('Error fetching bookings:', error);
       setError('Error fetching bookings. Please try again later.'); // Set error state
-      setLoading(false);
+      setLoading(true);
     }
   };
+
+  if(loading){
+    return <Preloader/>
+  }
 
   const handleViewDetails = (booking) => {
     setSelectedBooking(booking);

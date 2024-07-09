@@ -1,1 +1,51 @@
-/* BookingList.module.css */
+.counterContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    margin: 16px 0;
+    background-color: #f9f9f9;
+  }
+  
+  .counterLabel {
+    margin-left: 16px;
+    font-weight: 600;
+  }
+  
+  .counterButton {
+    min-width: 32px;
+    margin: 0 8px;
+  }
+  
+  .counterValue {
+    margin: 0 16px;
+    min-width: 32px;
+    text-align: center;
+    font-weight: 500;
+  }
+  .priceBox {
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    background-color: #ffff;
+    color: black;
+    border-radius: 4px;
+    margin-left: 16px;
+  }
+  
+  .totalBox {
+    display: flex;
+    align-items: center;
+    color: black;
+    padding: 2px;
+    background-color: #ffff;
+    border-radius: 4px;
+    margin-left: 16px
+  }
+  
+  .totalBox > * {
+    margin-top: 8px;
+  }
+    

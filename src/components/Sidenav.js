@@ -215,6 +215,7 @@ export default function Sidenav() {
             </ListItemButton>
           </ListItem>
 
+          
           <ListItem
             disablePadding
             sx={{ display: "block" }}
@@ -268,6 +269,38 @@ export default function Sidenav() {
               <ListItemText primary="Coupons" sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
           </ListItem>
+           
+          { isSuperAdmin &&(<ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/reportpage");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <CorporateFareIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Reports"
+                sx={{ opacity: open ? 1 : 0 }}
+              />
+            </ListItemButton>
+          </ListItem>)}
+
+
 
          { isSuperAdmin &&(<ListItem
             disablePadding
@@ -361,6 +394,8 @@ export default function Sidenav() {
                 />
               </ListItemButton>
             </ListItem>
+
+            
           )}
         </List>
       </Drawer>

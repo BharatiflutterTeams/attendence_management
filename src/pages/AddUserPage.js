@@ -26,6 +26,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import endpoints from "../Endpoints/endpoint";
+import Preloader from "../components/Preloader";
 
 const drawerWidth = 240;
 
@@ -45,6 +46,7 @@ export default function UsersPage() {
   const [search, setSearch] = React.useState("");
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  const [loading ,setLoading] = React.useState(true);
 
   React.useEffect(() => {
     fetchUsers();
@@ -73,10 +75,16 @@ export default function UsersPage() {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/userprofile/users`);
       setUsers(response.data.users);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching users:", error);
+      loading(true);
     }
   };
+
+  if(loading){
+    return <Preloader/>
+  }
 
   const handleOpen = () => {
     setOpen(true);

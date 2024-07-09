@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 const drawerWidth = 240;
+
 function Home() {
   const [greeting, setGreeting] = useState('');
   const Navigate = useNavigate();

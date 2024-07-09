@@ -19,6 +19,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import endpoints from '../Endpoints/endpoint';
+import Preloader from '../components/Preloader';
+import useAppStore from '../appStore'
 
 const drawerWidth = 240;
 
@@ -26,15 +28,17 @@ export default function CompanyProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchDetails();
+    //fetchDetails();
     checkAuth();
   }, []);
 
-  const [formValues, setFormValues] = useState({});
+  const companyData = useAppStore(state=>state.companyData);
+  //const[loading , setLoading] = useState(true);
+  const [formValues, setFormValues] = useState({...companyData});
   const [isEdit, setIsEdit] = useState(false);
   const [errors, setErrors] = useState({});
-  const [complementaryPersons, setComplementaryPersons] = useState([]);
-  const [paymentMethods ,  setPaymentMethods] = useState([]);
+  const [complementaryPersons, setComplementaryPersons] = useState([...companyData.complementaryPersons]);
+  const [paymentMethods ,  setPaymentMethods] = useState([...companyData.paymentMethods]);
 
   const checkAuth = () => {
     const token = sessionStorage.getItem('jwtToken');
@@ -50,27 +54,32 @@ export default function CompanyProfile() {
     }
   };
 
-  const fetchDetails = async () => {
-    try {
-      const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/adminprofile`);
-      setFormValues(response.data?.adminprofile[0]);
-      setComplementaryPersons(response.data?.adminprofile[0]?.complementaryPersons || []);
-      setPaymentMethods(response.data?.adminprofile[0]?.paymentMethods || []);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    }
-  };
+  if(!formValues){
+    return <Preloader/>
+  }
+
+  // const fetchDetails = async () => {
+  //   try {
+  //     const response = await axios.get(`${endpoints.serverBaseURL}/api/admin/adminprofile`);
+  //     setFormValues(response.data?.adminprofile[0]);
+  //     setComplementaryPersons(response.data?.adminprofile[0]?.complementaryPersons || []);
+  //     setPaymentMethods(response.data?.adminprofile[0]?.paymentMethods || []);
+  //   } catch (error) {
+  //     console.error('Error fetching plans:', error);
+  //   }
+  // };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormValues({ ...formValues, [name]: value });
   };
 
-  const handleComplementaryPersonChange = (index, value) => {
+  const handleComplementaryPersonChange = (index, field,value) => {
     const updatedPersons = [...complementaryPersons];
-    updatedPersons[index] = value;
+    updatedPersons[index] = {...updatedPersons[index],[field]:value};
     setComplementaryPersons(updatedPersons);
   };
+
   const handlePaymentMethodChange = (index, value) =>{
     const updatedMethods = [...paymentMethods];
     updatedMethods[index] = value;
@@ -79,7 +88,7 @@ export default function CompanyProfile() {
     
 
   const addComplementaryPerson = () => {
-    setComplementaryPersons([...complementaryPersons, '']);
+    setComplementaryPersons([...complementaryPersons, {name:'',email:''}]);
   };
 
   const addPaymentMehod = ()=>{
@@ -93,6 +102,7 @@ export default function CompanyProfile() {
 
   const removePaymentMethod =(index)=>{
     const updatedMethods = paymentMethods.filter((_,i)=> i !== index)
+    setPaymentMethods(updatedMethods);
   }
 
   const handleSubmit = async (event) => {
@@ -104,7 +114,7 @@ export default function CompanyProfile() {
         await axios.put(`${endpoints.serverBaseURL}/api/admin/adminprofile/${formValues._id}`, updatedFormValues);
       }
       setIsEdit(false);
-      fetchDetails();
+      //fetchDetails();
     } catch (error) {
       console.error('Error updating profile:', error);
     }
@@ -168,7 +178,7 @@ export default function CompanyProfile() {
           }}
         >
           <Container component="main" maxWidth="md">
-            <Paper elevation={3} sx={{ p: 3, mt: 5 }}>
+            <Paper elevation={2} sx={{ p: 3, mt: 5 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Typography variant="h6" component="h1">
                   Company Profile
@@ -181,7 +191,7 @@ export default function CompanyProfile() {
                   Edit Profile
                 </Button>
               </Box>
-              <Card sx={{ p: 3, boxShadow: 3, mt: 3 }}>
+              <Card sx={{ p: 3, boxShadow: 0, mt: 3 }}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="h5" color="primary">
@@ -190,13 +200,13 @@ export default function CompanyProfile() {
                     <Avatar
                       sx={{ width: 120, height: 120, mt: 2 }}
                       alt="Company Logo"
-                      src={formValues?.logo}
+                      src={formValues.logo}
                     />
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="h7" color="#867AE9" gutterBottom>
                       Complementary Persons
                     </Typography>
-                     <Typography variant='body1' >{complementaryPersons.join(", ")}</Typography>
+                     <Typography variant='body1' >{complementaryPersons.map(person => person.name).join(", ")}</Typography>
                      <Divider sx={{ my: 2 }} />
 
                     <Typography variant="h7" color="#867AE9" gutterBottom>
@@ -332,30 +342,41 @@ export default function CompanyProfile() {
                 />
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="h6" color="#867AE9" gutterBottom>
-                  Complementary Persons
-                </Typography>
-                {complementaryPersons.map((person, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <TextField
-                      fullWidth
-                      value={person}
-                      onChange={(e) => handleComplementaryPersonChange(index, e.target.value)}
-                      label={`Person ${index + 1}`}
-                    />
-                    <IconButton onClick={() => removeComplementaryPerson(index)} color="secondary">
-                      <RemoveCircle />
-                    </IconButton>
-                  </Box>
-                ))}
-                <Button
-                  startIcon={<AddCircle />}
-                  onClick={addComplementaryPerson}
-                  sx={{ mt: 2, textTransform: 'none', fontWeight: 'bold' }}
-                >
-                  Add Person
-                </Button>
-              </Grid>
+      <Typography variant="h6" color="#867AE9" gutterBottom>
+        Complementary Persons
+      </Typography>
+      {complementaryPersons.map((person, index) => (
+        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <TextField
+            fullWidth
+            value={person.name || ''}
+            onChange={(e) => handleComplementaryPersonChange(index, 'name', e.target.value)}
+            label={`Person ${index + 1} Name`}
+            variant="outlined"
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            value={person.email || ''}
+            onChange={(e) => handleComplementaryPersonChange(index, 'email', e.target.value)}
+            label={`Person ${index + 1} Email`}
+            variant="outlined"
+            margin="normal"
+          />
+          <IconButton onClick={() => removeComplementaryPerson(index)} color="secondary">
+            <RemoveCircle />
+          </IconButton>
+        </Box>
+      ))}
+      <Button
+        startIcon={<AddCircle />}
+        onClick={addComplementaryPerson}
+        sx={{ mt: 2, textTransform: 'none', fontWeight: 'bold' }}
+      >
+        Add Person
+      </Button>
+      
+    </Grid>
 
               <Grid item xs={12}>
                 <Typography variant="h6" color="#867AE9" gutterBottom>

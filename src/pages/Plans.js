@@ -277,7 +277,7 @@ export default function PlansPage() {
   };
 
   const handleAddHighlight = () => {
-    if (newHighlight && currentSubPackage.adult_activities?.length < 15) {
+    if (newHighlight && currentSubPackage.adult_activities?.length < 25) {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
@@ -291,7 +291,7 @@ export default function PlansPage() {
   };
 
   const handleAddChildActivities = () => {
-    if (newChildActivities && currentSubPackage.child_activities?.length < 15) {
+    if (newChildActivities && currentSubPackage.child_activities?.length < 25) {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
@@ -900,7 +900,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddHighlight}
-                  disabled={currentSubPackage.adult_activities?.length >= 10}
+                  disabled={currentSubPackage.adult_activities?.length >= 25}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
@@ -946,7 +946,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddChildActivities}
-                  disabled={currentSubPackage.child_activities?.length >= 10}
+                  disabled={currentSubPackage.child_activities?.length >= 25}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
@@ -994,7 +994,7 @@ export default function PlansPage() {
                 />
                 <Button
                   onClick={handleAddAddOn}
-                  disabled={currentSubPackage.addOn?.length >= 10}
+                  disabled={currentSubPackage.addOn?.length >= 25}
                   variant="outlined"
                   size="small"
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useRef} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -37,8 +37,8 @@ import { jwtDecode } from "jwt-decode";
 import useAppStore from "../appStore";
 import Preloader from "../components/Preloader";
 import RemoveIcon from "@mui/icons-material/Remove";
-import ReactToPrint from 'react-to-print';
-import PrintComponent from '../components/PrintComponent';
+import ReactToPrint from "react-to-print";
+import PrintComponent from "../components/PrintComponent";
 import DownloadExcel from "../components/DownloadExcel";
 import styles from "./BookingList.module.css";
 import {
@@ -46,8 +46,8 @@ import {
   Person as PersonIcon,
   ChildFriendly as ChildIcon,
 } from "@mui/icons-material";
-import ChildCareIcon from '@mui/icons-material/ChildCare';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import ChildCareIcon from "@mui/icons-material/ChildCare";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 const drawerWidth = 240;
 
@@ -119,36 +119,34 @@ export default function BookingPage() {
   const calculateTotal = (adultCount, childCount) => {
     let adultPrice = 0;
     let childPrice = 0;
-  
+
     if (choosePlan.subpackages) {
       adultPrice =
         choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price || 0;
       childPrice =
         choosePlan?.subpackages[selectedSubPackageIndex]?.child_price || 0;
     }
-  
+
     const totalAdultAmount = adultCount * adultPrice;
     const totalChildAmount = childCount * childPrice;
-  
+
     // Calculate the total amount before GST
     const totalBeforeGST = totalAdultAmount + totalChildAmount;
-  
+
     // Calculate the GST amount
     const gstAmount = totalBeforeGST * 0.18;
-  
+
     // Calculate the total amount including GST and round it off
     const totalAmountWithGST = Math.round(totalBeforeGST + gstAmount);
-  
+
     // Round off individual amounts if needed
     const roundedTotalAdultAmount = Math.round(totalAdultAmount);
     const roundedTotalChildAmount = Math.round(totalChildAmount);
-  
+
     setTotalAdultPrice(roundedTotalAdultAmount);
     setTotalChildPrice(roundedTotalChildAmount);
     setTotalAmount(totalAmountWithGST);
   };
-  
-  
 
   useEffect(() => {
     fetchBookings();
@@ -301,9 +299,6 @@ export default function BookingPage() {
     setNewBooking({ ...newBooking, [name]: value });
   };
 
-
-
- 
   const handleAdultCountChange = (value) => {
     setNewBooking((prev) => {
       const updatedBooking = { ...prev, adult: value };
@@ -311,8 +306,6 @@ export default function BookingPage() {
       return updatedBooking;
     });
   };
-
-  
 
   const handlePlanChange = (event, newValue) => {
     setNewBooking({ ...newBooking, planId: newValue?._id || "" });
@@ -379,7 +372,7 @@ export default function BookingPage() {
     }, 500);
     handleMenuClose();
   };
-///////////////////////////////////////////
+  ///////////////////////////////////////////
   const handleViewOpen = () => {
     setViewOpen(true);
   };
@@ -490,16 +483,20 @@ export default function BookingPage() {
             {/* <MenuItem onClick={handleEditOpen}>Edit</MenuItem>
             <MenuItem onClick={handleDeleteOpen}>Delete</MenuItem> */}
           </Menu>
-           {/* Hidden print button for triggering print */}
-      <ReactToPrint
-        trigger={() => <button id="print-button" style={{ display: 'none' }}>Print</button>}
-        content={() => componentRef.current}
-      />
+          {/* Hidden print button for triggering print */}
+          <ReactToPrint
+            trigger={() => (
+              <button id="print-button" style={{ display: "none" }}>
+                Print
+              </button>
+            )}
+            content={() => componentRef.current}
+          />
 
-      {/* Hidden PrintComponent */}
-      <div style={{ display: 'none' }}>
-        <PrintComponent ref={componentRef} />
-      </div>
+          {/* Hidden PrintComponent */}
+          <div style={{ display: "none" }}>
+            <PrintComponent ref={componentRef} />
+          </div>
         </>
       ),
     },
@@ -598,7 +595,7 @@ export default function BookingPage() {
                   }}
                   size="small"
                 />
-                 
+
                 <Autocomplete
                   options={plans}
                   getOptionLabel={(option) => option.title}
@@ -616,8 +613,8 @@ export default function BookingPage() {
                 />
               </div>
 
-                <DownloadExcel bookings={bookings}/> 
-                {/* Download Excel button */}
+              <DownloadExcel bookings={bookings} />
+              {/* Download Excel button */}
 
               <Button
                 variant="contained"
@@ -1089,6 +1086,18 @@ export default function BookingPage() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Sub Package
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {
+                              currentBooking.planId?.subpackages[
+                                currentBooking?.selectedSubPackage
+                              ].name 
+                            }
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                             Adult Price
                           </TableCell>
@@ -1102,6 +1111,14 @@ export default function BookingPage() {
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                             ₹{currentBooking.childrenPrice}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Total Price
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            ₹{currentBooking.totalAmount}
                           </TableCell>
                         </TableRow>
                       </TableBody>

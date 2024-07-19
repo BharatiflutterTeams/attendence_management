@@ -1,4 +1,4 @@
-import * as React  from "react";
+import * as React from "react";
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   Typography,
   Snackbar,
   Alert,
-   Grid,
+  Grid,
   Collapse,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -30,13 +30,14 @@ import endpoints from "../Endpoints/endpoint";
 import Preloader from "../components/Preloader";
 import TimeInput from "../components/TimeInput";
 import { toast } from "react-toastify";
-import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
-import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import advancedFormat from "dayjs/plugin/advancedFormat";
 import { useEffect } from "react";
+
 dayjs.extend(isBetween);
 dayjs.extend(advancedFormat);
 
@@ -50,7 +51,7 @@ export default function PlansPage() {
   const [newPlan, setNewPlan] = React.useState({
     title: "",
     description: "",
-    timing :"",
+    timing: {},
     //adult_price: "",
     //child_price: "",
     subpackages: [],
@@ -60,6 +61,8 @@ export default function PlansPage() {
     //adult_gold_package : [],
     //child_gold_package : [],
     plan_coupon: [],
+    adult_age_range: "",
+    child_age_range: "",
     //notes:""
   });
   const [selectedPlan, setSelectedPlan] = React.useState(null);
@@ -68,7 +71,7 @@ export default function PlansPage() {
   const [search, setSearch] = React.useState("");
   const [newLink, setNewLink] = React.useState("");
   const [newHighlight, setNewHighlight] = React.useState("");
-  const [newChildActivities , setNewChildActivities] = React.useState("");
+  const [newChildActivities, setNewChildActivities] = React.useState("");
   const [newAddOn, setNewAddOn] = React.useState("");
   //const [adultPoint , setAdultPoint] = React.useState("");
   //const [childPoint , setChildPoint] = React.useState("");
@@ -77,7 +80,7 @@ export default function PlansPage() {
   const [errors, setErrors] = React.useState({});
   const [subPackages, setsubPackages] = React.useState([]);
   const [subPackageDialogOpen, setSubPackageDialogOpen] = React.useState(false);
-  const [loading , setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(true);
   //const [fromTime, setFromTime] = React.useState({ time: '07:30', period: 'AM' });
   //const [toTime, setToTime] = React.useState({ time: '05:30', period: 'PM' });
   const [currentSubPackage, setCurrentSubPackage] = React.useState({
@@ -85,17 +88,16 @@ export default function PlansPage() {
     adult_price: "",
     child_price: "",
     adult_activities: [],
-    child_activities : [],
+    child_activities: [],
     addOn: [],
   });
   const [isEditing, setIsEditing] = React.useState(false);
   const [editIndex, setEditIndex] = React.useState(null);
-  const[adminRole , setAdminRole] = React.useState();
-  const [fromTime, setFromTime] = React.useState(dayjs());
-  const [toTime, setToTime] = React.useState(dayjs());
+  const [adminRole, setAdminRole] = React.useState();
+  const [fromTime, setFromTime] = React.useState();
+  const [toTime, setToTime] = React.useState();
   // const [fromPeriod, setFromPeriod] = React.useState('AM');
   // const [toPeriod, setToPeriod] = React.useState('PM');
-  
 
   React.useEffect(() => {
     fetchPlans();
@@ -103,18 +105,20 @@ export default function PlansPage() {
     checkAuth();
   }, []);
 
-  
-
   useEffect(() => {
     if (selectedPlan) {
       const fromDate = dayjs();
-      const [fromHours, fromMinutes] = selectedPlan?.timing?.fromtime.split(':').map(Number);
-      
+      const [fromHours, fromMinutes] = selectedPlan?.timing?.fromtime
+        .split(":")
+        .map(Number);
+
       setFromTime(fromDate.hour(fromHours).minute(fromMinutes));
 
       const toDate = dayjs();
-      const [toHours, toMinutes] = selectedPlan?.timing?.totime.split(':').map(Number);
-     
+      const [toHours, toMinutes] = selectedPlan?.timing?.totime
+        .split(":")
+        .map(Number);
+
       setToTime(toDate.hour(toHours).minute(toMinutes));
     }
   }, [selectedPlan]);
@@ -144,7 +148,7 @@ export default function PlansPage() {
     } catch (error) {
       console.error("Error fetching plans:", error);
       setLoading(true);
-      alert("Something Went Wrong")
+      alert("Something Went Wrong");
     }
   };
 
@@ -154,15 +158,14 @@ export default function PlansPage() {
         `${endpoints.serverBaseURL}/api/coupons`
       );
       setCoupons(response.data.coupons);
-
     } catch (error) {
       console.error("Error fetching coupons:", error);
     }
   };
 
   //loader****************************//
-  if(loading){
-    return <Preloader/>
+  if (loading) {
+    return <Preloader />;
   }
   //************************************ */
 
@@ -176,31 +179,36 @@ export default function PlansPage() {
   };
 
   const handleSave = async () => {
-      
-       setNewPlan({
-         ...newPlan,
-         timing: {
-           fromtime: fromTime.format("HH:mm"),
-           fromperiod: fromTime.hour() >= 12 ? "PM" : "AM",
-           totime: toTime.format("HH:mm"),
-           toperiod: toTime.hour() >= 12 ? "PM" : "AM",
-         },
-       });
+    const timing = {
+      fromtime: formatTime(fromTime).time,
+      fromperiod: formatTime(fromTime).period,
+      totime: formatTime(toTime).time,
+      toperiod: formatTime(toTime).period,
+    };
+    console.log("timing", timing);
+    const updatedPlan = {
+      ...newPlan,
+      timing: timing,
+    };
+    // setNewPlan({
+    //   ...newPlan,
+    //    timing : timing
+    // });
+    console.log(updatedPlan);
     try {
       if (selectedPlan) {
         await axios.put(
           `${endpoints.serverBaseURL}/api/plan/${selectedPlan._id}`,
-          newPlan
+          updatedPlan
         );
       } else {
-        await axios.post(`${endpoints.serverBaseURL}/api/plan`, newPlan);
+        await axios.post(`${endpoints.serverBaseURL}/api/plan`, updatedPlan);
       }
       fetchPlans();
       setNewPlan({
         title: "",
         description: "",
-         fromTime:{},
-         toTime:{},
+        timing: {},
         //adult_price: "",
         //child_price: "",
         subpackages: [],
@@ -210,6 +218,8 @@ export default function PlansPage() {
         //adult_gold_package:[],
         //child_gold_package:[],
         plan_coupon: [],
+        adult_age_range: "",
+        child_age_range: "",
 
         //notes:""
       });
@@ -224,6 +234,24 @@ export default function PlansPage() {
     setNewPlan(plan);
     setOpen(true);
   };
+
+  /////////////////////////handle  time/////////////
+  const handleFromTimeChange = (newValue) => {
+    setFromTime(newValue);
+  };
+
+  const handleToTimeChange = (newValue) => {
+    setToTime(newValue);
+  };
+
+  const formatTime = (date) => {
+    console.log("date", date);
+    return {
+      time: dayjs(date).format("hh:mm"),
+      period: dayjs(date).format("A"),
+    };
+  };
+  //////////////////////////////////////////////////////
 
   const handleDelete = async (planId) => {
     setDeletePlanId(planId);
@@ -258,13 +286,12 @@ export default function PlansPage() {
     setNewHighlight(event.target.value);
   };
 
-  const handleChildActivitiesChange = (event) =>{
+  const handleChildActivitiesChange = (event) => {
     setNewChildActivities(event.target.value);
-  }
+  };
   const handleAddOnChange = (event) => {
     setNewAddOn(event.target.value);
   };
-
 
   const handleAddLink = () => {
     if (newLink && newPlan.image_list.length < 5) {
@@ -295,7 +322,10 @@ export default function PlansPage() {
       //setNewPlan({ ...newPlan, activities: [...newPlan.activities, newHighlight] });
       setCurrentSubPackage({
         ...currentSubPackage,
-        child_activities: [...currentSubPackage.child_activities, newChildActivities],
+        child_activities: [
+          ...currentSubPackage.child_activities,
+          newChildActivities,
+        ],
       });
       setNewChildActivities("");
     } else {
@@ -318,8 +348,6 @@ export default function PlansPage() {
       setSnackbarOpen(true);
     }
   };
-
-  
 
   const handleRemoveLink = (index) => {
     const updatedLinks = newPlan.image_list.filter((_, i) => i !== index);
@@ -349,9 +377,7 @@ export default function PlansPage() {
   };
 
   const handleRemoveAddOn = (index) => {
-    const updatedAddOns = currentSubPackage.addOn.filter(
-      (_, i) => i !== index
-    );
+    const updatedAddOns = currentSubPackage.addOn.filter((_, i) => i !== index);
     //setNewPlan({ ...newPlan, activities: updatedHighlights });
     setCurrentSubPackage({ ...currentSubPackage, addOn: updatedAddOns });
   };
@@ -383,7 +409,7 @@ export default function PlansPage() {
   const validate = () => {
     const newErrors = {};
     if (!newPlan.title) newErrors.title = "Title is required";
-    if (!newPlan.description || newPlan.description.length > 200) {
+    if (!newPlan.description || newPlan.description.length > 500) {
       newErrors.description =
         "Description is required and should be less than 200 characters";
     }
@@ -395,6 +421,9 @@ export default function PlansPage() {
     // }
     if (newPlan.image_list.length === 0) {
       newErrors.image_list = "At least one image link is required";
+    }
+    if (!newPlan.adult_age_range) {
+      newErrors.adult_age_range = "field required";
     }
     // if (newPlan.adult_gold_package.length === 0) {
     //   newErrors.adult_gold_package =
@@ -423,7 +452,7 @@ export default function PlansPage() {
       adult_price: "",
       child_price: "",
       adult_activities: [],
-      child_activities : [],
+      child_activities: [],
       addOn: [],
     });
     setIsEditing(false);
@@ -436,13 +465,13 @@ export default function PlansPage() {
   };
 
   const handleSaveSubPackage = () => {
-    if(isEditing){
-         const upadatedSubPackages = newPlan.subpackages.map((subPackage,index)=>(
-           index === editIndex ? currentSubPackage : subPackage
-         ))
-         setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
-    }else{
-      const upadatedSubPackages = [...newPlan.subpackages , currentSubPackage]
+    if (isEditing) {
+      const upadatedSubPackages = newPlan.subpackages.map((subPackage, index) =>
+        index === editIndex ? currentSubPackage : subPackage
+      );
+      setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
+    } else {
+      const upadatedSubPackages = [...newPlan.subpackages, currentSubPackage];
       setNewPlan({ ...newPlan, subpackages: upadatedSubPackages });
     }
 
@@ -455,9 +484,9 @@ export default function PlansPage() {
   const handleRemoveSubPackage = (index) => {
     const newSubPackages = newPlan.subpackages.filter((_, i) => i !== index);
     setsubPackages(newSubPackages);
-    setNewPlan({...newPlan, subpackages: newSubPackages});
+    setNewPlan({ ...newPlan, subpackages: newSubPackages });
   };
-  
+
   const handleEditSubPackage = (index) => {
     setCurrentSubPackage(newPlan.subpackages[index]);
     setEditIndex(index);
@@ -510,19 +539,21 @@ export default function PlansPage() {
               }}
             />
 
-            {adminRole === 'superadmin' && <Button
-              variant="contained"
-              style={{
-                background: "#ffffff",
-                color: "#867AE9",
-                textTransform: "none",
-                fontWeight: "bold",
-              }}
-              onClick={handleOpen}
-              startIcon={<AddIcon />}
-            >
-              Add Plan
-            </Button>}
+            {adminRole === "superadmin" && (
+              <Button
+                variant="contained"
+                style={{
+                  background: "#ffffff",
+                  color: "#867AE9",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
+                onClick={handleOpen}
+                startIcon={<AddIcon />}
+              >
+                Add Plan
+              </Button>
+            )}
           </Box>
 
           {/* add plan dialog */}
@@ -560,34 +591,37 @@ export default function PlansPage() {
                 onChange={handleChange}
                 error={!!errors.description}
                 //helperText={errors.description}
-                inputProps={{ minLength: 70,maxLength: 200 }}
-                helperText={errors.description ? errors.description : `${newPlan?.description?.length}/200`}
+                inputProps={{ minLength: 70, maxLength: 200 }}
+                helperText={
+                  errors.description
+                    ? errors.description
+                    : `${newPlan?.description?.length}/200`
+                }
               />
 
-              
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Grid container spacing={1} sx={{mt:'0.1rem', mb:'0.5rem'}}>
-            <Grid item xs={6}>
-              <MobileTimePicker
-                label="From Time"
-                value={fromTime}
-                onChange={setFromTime}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-                ampm
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <MobileTimePicker
-                label="To Time"
-                value={toTime}
-                onChange={setToTime}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-                ampm
-              />
-            </Grid>
-          </Grid>
-        </LocalizationProvider>
-              
+                <Grid container spacing={1} sx={{ mt: "0.1rem", mb: "0.5rem" }}>
+                  <Grid item xs={6}>
+                    <MobileTimePicker
+                      label="From Time"
+                      value={fromTime}
+                      onChange={handleFromTimeChange}
+                      renderInput={(params) => <TextField {...params} />}
+                      ampm
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <MobileTimePicker
+                      label="To Time"
+                      value={toTime}
+                      onChange={handleToTimeChange}
+                      renderInput={(params) => <TextField {...params} />}
+                      ampm
+                    />
+                  </Grid>
+                </Grid>
+              </LocalizationProvider>
+
               {/* <TextField
                 margin="dense"
                 label="Adult Price"
@@ -631,25 +665,43 @@ export default function PlansPage() {
                     <CardContent>
                       <Typography variant="h6">{subPackage.name}</Typography>
                       <Typography variant="body2">
-                        <span style={{fontWeight:'bold'}}>Adult Price :</span>{subPackage.adult_price}
+                        <span style={{ fontWeight: "bold" }}>
+                          Adult Price :
+                        </span>
+                        {subPackage.adult_price}
                       </Typography>
                       <Typography variant="body2">
-                      <span style={{fontWeight:'bold'}}> Child Price: </span>{subPackage.child_price}
+                        <span style={{ fontWeight: "bold" }}>
+                          {" "}
+                          Child Price:{" "}
+                        </span>
+                        {subPackage.child_price}
                       </Typography>
                       <Typography varaint="body2">
-                      <span style={{fontWeight:'bold'}}>Adult_Activities: </span> {subPackage.adult_activities.join(", ")}
+                        <span style={{ fontWeight: "bold" }}>
+                          Adult_Activities:{" "}
+                        </span>{" "}
+                        {subPackage.adult_activities.join(", ")}
                       </Typography>
                       <Typography varaint="body2">
-                      <span style={{fontWeight:'bold'}}>Child_Activities: </span> {subPackage.child_activities.join(", ")}
+                        <span style={{ fontWeight: "bold" }}>
+                          Child_Activities:{" "}
+                        </span>{" "}
+                        {subPackage.child_activities.join(", ")}
                       </Typography>
                       <Typography varaint="body2">
-                      <span style={{fontWeight:'bold'}}>Add-Ons: </span>{subPackage.addOn.join(", ")}
+                        <span style={{ fontWeight: "bold" }}>Add-Ons: </span>
+                        {subPackage.addOn.join(", ")}
                       </Typography>
                     </CardContent>
                     <CardActions>
-                    <Button onClick={() => handleEditSubPackage(index)} variant="text" size="small">
+                      <Button
+                        onClick={() => handleEditSubPackage(index)}
+                        variant="text"
+                        size="small"
+                      >
                         Edit
-                   </Button>
+                      </Button>
                       <Button
                         onClick={() => handleRemoveSubPackage(index)}
                         varaint="outlined"
@@ -802,6 +854,32 @@ export default function PlansPage() {
                   </Box>
                 ))}
                 </Box> */}
+              <TextField
+                autoFocus
+                required
+                margin="dense"
+                label="Add Adult Age Limit Range"
+                fullWidth
+                placeholder="e.g (12+ years)"
+                variant="outlined"
+                name="adult_age_range"
+                value={newPlan.adult_age_range}
+                onChange={handleChange}
+                error={!!errors.adult_age_range}
+                helperText={errors.adult_age_range}
+              />
+              <TextField
+                autoFocus
+                required
+                margin="dense"
+                label="Add Child Age Limit Range"
+                fullWidth
+                placeholder="e.g (5-10 years)"
+                variant="outlined"
+                name="child_age_range"
+                value={newPlan.child_age_range}
+                onChange={handleChange}
+              />
 
               <Autocomplete
                 multiple
@@ -821,7 +899,7 @@ export default function PlansPage() {
                 )}
               />
             </DialogContent>
-            
+
             <DialogActions>
               <Button
                 onClick={handleClose}
@@ -838,7 +916,6 @@ export default function PlansPage() {
                 Save
               </Button>
             </DialogActions>
-            
           </Dialog>
 
           {/* sub package dialog */}
@@ -849,7 +926,7 @@ export default function PlansPage() {
             }}
           >
             <DialogTitle sx={{ background: "#867AE9", color: "white" }}>
-               {isEditing ? "Edit Sub Package" : "Add Sub Package"}
+              {isEditing ? "Edit Sub Package" : "Add Sub Package"}
             </DialogTitle>
             <DialogContent>
               <TextField
@@ -954,7 +1031,6 @@ export default function PlansPage() {
                   Add Child Activities
                 </Button>
               </Box>
-
 
               <Box>
                 {currentSubPackage.child_activities?.map((activity, index) => (
@@ -1143,7 +1219,8 @@ export default function PlansPage() {
                       </Typography>
                       <Typography varaint="body2" color="text.secondary">
                         <strong>Timing: </strong>
-                        {plan.timing?.fromtime} {plan.timing?.fromperiod} to {plan.timing?.totime} {plan.timing?.toperiod}
+                        {plan.timing?.fromtime} {plan.timing?.fromperiod} to{" "}
+                        {plan.timing?.totime} {plan.timing?.toperiod}
                       </Typography>
                       {/* <Typography variant="body2" color="text.secondary">
                         <strong>Image Links: </strong>{" "}
@@ -1157,29 +1234,33 @@ export default function PlansPage() {
                       </Typography>
                     </Box>
                   </CardContent>
-                  { adminRole === 'superadmin' &&
-                  <Box
-                    sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
-                  >
-                    <Button
-                      size="small"
-                      onClick={() => handleEdit(plan)}
-                      sx={{ mr: 1 }}
-                      variant="text"
-                      color="primary"
+                  {adminRole === "superadmin" && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        mt: 2,
+                      }}
                     >
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => handleDelete(plan._id)}
-                      variant="text"
-                      color="secondary"
-                    >
-                      Delete
-                    </Button>
-                  </Box>
-                   }
+                      <Button
+                        size="small"
+                        onClick={() => handleEdit(plan)}
+                        sx={{ mr: 1 }}
+                        variant="text"
+                        color="primary"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => handleDelete(plan._id)}
+                        variant="text"
+                        color="secondary"
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  )}
                 </Box>
               </Card>
             ))}

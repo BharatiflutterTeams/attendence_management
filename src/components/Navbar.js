@@ -228,7 +228,7 @@ const handleLogout=()=>{
             <br />
             Phone: <strong>9368303030</strong>
             <br />
-            Email:<strong> prasad.parik@bhartisofttech.com </strong>
+            Email:<strong> support@bhartisofttech.com </strong>
           </DialogContentText>
         </DialogContent>
         <DialogActions>

@@ -17,6 +17,7 @@ import {
   Alert,
   Grid,
   Collapse,
+  IconButton
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import axios from "axios";
@@ -36,6 +37,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import { AddCircle, RemoveCircle } from '@mui/icons-material'
 import { useEffect } from "react";
 
 dayjs.extend(isBetween);
@@ -355,13 +357,13 @@ export default function PlansPage() {
   };
 
   const handleRemoveHighlights = (index) => {
-    const updatedHighlights = currentSubPackage.child_activities.filter(
+    const updatedHighlights = currentSubPackage.adult_activities.filter(
       (_, i) => i !== index
     );
     //setNewPlan({ ...newPlan, activities: updatedHighlights });
     setCurrentSubPackage({
       ...currentSubPackage,
-      child_activities: updatedHighlights,
+      adult_activities: updatedHighlights,
     });
   };
 
@@ -557,7 +559,7 @@ export default function PlansPage() {
           </Box>
 
           {/* add plan dialog */}
-          <Dialog open={open} onClose={handleClose}>
+          <Dialog open={open} onClose={handleClose} maxWidth="md">
             <DialogTitle sx={{ background: "#867AE9", color: "white" }}>
               {selectedPlan ? "Edit Plan" : "Add Plan"}
             </DialogTitle>
@@ -600,8 +602,8 @@ export default function PlansPage() {
               />
 
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Grid container spacing={1} sx={{ mt: "0.1rem", mb: "0.5rem" }}>
-                  <Grid item xs={6}>
+                <Grid container spacing={1} sx={{ mt: "0.1rem", mb: "1rem" }}>
+                  <Grid item xs={4}>
                     <MobileTimePicker
                       label="From Time"
                       value={fromTime}
@@ -610,7 +612,7 @@ export default function PlansPage() {
                       ampm
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <MobileTimePicker
                       label="To Time"
                       value={toTime}
@@ -619,6 +621,17 @@ export default function PlansPage() {
                       ampm
                     />
                   </Grid>
+                   <Grid item xs={4}>
+                   <Button
+                onClick={handleAddSubPackageClick}
+                fullWidth
+                variant="outlined"
+                size="small"
+                sx={{ mt: "1"  , height:"3.5rem"}}
+              >
+                Add Sub Package
+              </Button>
+                    </Grid> 
                 </Grid>
               </LocalizationProvider>
 
@@ -650,7 +663,7 @@ export default function PlansPage() {
               />  */}
 
               {/* sub Package section */}
-              <Button
+              {/* <Button
                 onClick={handleAddSubPackageClick}
                 fullWidth
                 variant="outlined"
@@ -658,7 +671,7 @@ export default function PlansPage() {
                 sx={{ mt: "1" }}
               >
                 Add Sub Package
-              </Button>
+              </Button> */}
               <Box>
                 {newPlan.subpackages.map((subPackage, index) => (
                   <Card key={index} sx={{ m: 1 }}>
@@ -736,7 +749,7 @@ export default function PlansPage() {
                   value={newLink}
                   onChange={handleImageLinksChange}
                 />
-                <Button
+                {/* <Button
                   onClick={handleAddLink}
                   disabled={newPlan.image_list.length >= 5}
                   variant="outlined"
@@ -744,7 +757,13 @@ export default function PlansPage() {
                   sx={{ ml: "10px", mt: "5px" }}
                 >
                   Add Link
-                </Button>
+                </Button> */}
+                <IconButton 
+                   onClick={handleAddLink}
+                   disabled={newPlan.image_list.length >= 5}
+                  >
+                   <AddCircle/>
+                </IconButton>
               </Box>
               <Box>
                 {newPlan.image_list?.map((link, index) => (
@@ -759,13 +778,18 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {link}
                     </Typography>
-                    <Button
+                    {/* <Button
                       onClick={() => handleRemoveLink(index)}
                       variant="outlined"
                       size="small"
                     >
                       Remove
-                    </Button>
+                    </Button> */}
+                    <IconButton
+                      onClick={() => handleRemoveLink(index)}
+                    >
+                      <RemoveCircle/>
+                    </IconButton>
                   </Box>
                 ))}
               </Box>
@@ -975,7 +999,7 @@ export default function PlansPage() {
                   value={newHighlight}
                   onChange={handleHighlightChange}
                 />
-                <Button
+                {/* <Button
                   onClick={handleAddHighlight}
                   disabled={currentSubPackage.adult_activities?.length >= 25}
                   variant="outlined"
@@ -983,7 +1007,14 @@ export default function PlansPage() {
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
                 >
                   Add Adult Activities
-                </Button>
+                </Button> */}
+                <IconButton  
+                   onClick={handleAddHighlight}
+                   disabled={currentSubPackage.adult_activities?.length >= 25}
+                   sx={{color :'#867AE9'}}
+                >
+                   <AddCircle/>
+                </IconButton>
               </Box>
               <Box>
                 {currentSubPackage.adult_activities?.map((activity, index) => (
@@ -998,13 +1029,19 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {activity}
                     </Typography>
-                    <Button
+                    {/* <Button
                       onClick={() => handleRemoveHighlights(index)}
                       variant="outlined"
                       size="small"
                     >
                       Remove
-                    </Button>
+                    </Button> */}
+                    <IconButton
+                      onClick={() => handleRemoveHighlights(index)}
+                      
+                    >
+                      <RemoveCircle/>
+                    </IconButton>
                   </Box>
                 ))}
               </Box>
@@ -1021,7 +1058,7 @@ export default function PlansPage() {
                   value={newChildActivities}
                   onChange={handleChildActivitiesChange}
                 />
-                <Button
+                {/* <Button
                   onClick={handleAddChildActivities}
                   disabled={currentSubPackage.child_activities?.length >= 25}
                   variant="outlined"
@@ -1029,7 +1066,14 @@ export default function PlansPage() {
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
                 >
                   Add Child Activities
-                </Button>
+                </Button> */}
+                 <IconButton
+                   onClick={handleAddChildActivities}
+                   disabled={currentSubPackage.child_activities?.length >= 25}
+                   sx={{color : '#867AE9'}}
+                 >
+                  <AddCircle/>
+                 </IconButton>
               </Box>
 
               <Box>
@@ -1045,13 +1089,18 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {activity}
                     </Typography>
-                    <Button
+                    {/* <Button
                       onClick={() => handleRemoveChildActivities(index)}
                       variant="outlined"
                       size="small"
                     >
                       Remove
-                    </Button>
+                    </Button> */}
+                     <IconButton
+                         onClick={() => handleRemoveChildActivities(index)}
+                     >
+                        <RemoveCircle/>
+                     </IconButton>
                   </Box>
                 ))}
               </Box>
@@ -1068,7 +1117,7 @@ export default function PlansPage() {
                   value={newAddOn}
                   onChange={handleAddOnChange}
                 />
-                <Button
+                {/* <Button
                   onClick={handleAddAddOn}
                   disabled={currentSubPackage.addOn?.length >= 25}
                   variant="outlined"
@@ -1076,7 +1125,14 @@ export default function PlansPage() {
                   sx={{ ml: "10px", mt: "5px", height: "40px" }}
                 >
                   Add add-Ons
-                </Button>
+                </Button> */}
+                <IconButton 
+                   onClick={handleAddAddOn}
+                   disabled={currentSubPackage.addOn?.length >= 25}
+                   sx={{color:'#867AE9'}}
+                >
+                   <AddCircle/>
+                </IconButton>
               </Box>
               <Box>
                 {currentSubPackage.addOn?.map((addOn, index) => (
@@ -1091,13 +1147,18 @@ export default function PlansPage() {
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {index + 1}) {addOn}
                     </Typography>
-                    <Button
+                    {/* <Button
                       onClick={() => handleRemoveAddOn(index)}
                       variant="outlined"
                       size="small"
                     >
                       Remove
-                    </Button>
+                    </Button> */}
+                      <IconButton
+                        onClick={() => handleRemoveAddOn(index)}
+                      >
+                          <RemoveCircle/>
+                      </IconButton>
                   </Box>
                 ))}
               </Box>

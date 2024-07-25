@@ -39,6 +39,7 @@ const drawerWidth = 240;
 export default function ReportPage() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
+  
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [pageSize, setPageSize] = useState(1000);
@@ -84,8 +85,12 @@ export default function ReportPage() {
           },
         }
       );
-      console.log("bookings by range", response.data.bookings);
-      setBookings(response.data.bookings);
+      //console.log("bookings by range", response.data.bookings);
+      const finalBookings = response.data.bookings.map((booking) => ({
+        ...booking,
+        subpackage: booking?.planId?.subpackages[booking.selectedSubPackage]?.name || "unknown",
+      }));
+      setBookings(finalBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
     }
@@ -93,7 +98,7 @@ export default function ReportPage() {
 
   const handleMenuOpen = (event, booking) => {
     setAnchorEl(event.currentTarget);
-    console.log("booking", booking);
+    //console.log("booking", booking);
     setCurrentBooking(booking);
   };
 
@@ -110,6 +115,11 @@ export default function ReportPage() {
     setViewOpen(false);
   };
 
+  // const finalBookings = bookings.map((booking) => ({
+  //   ...booking,
+  //   subpackage: booking.planId.subpackages[booking.selectedSubPackage].name,
+  // }));
+
   const columns = [
     {
       field: "userId",
@@ -120,8 +130,20 @@ export default function ReportPage() {
     {
       field: "planId",
       headerName: "Plan",
-      width: 300,
+      width: 150,
       valueGetter: (params) => params?.title || "Unknown",
+    },
+    {
+      field: "subpackage",
+      headerName: "Sub Package",
+      width: 250,
+      valueGetter: (params) => params || "Unknown",
+    },
+    {
+      field: "franchiseCode",
+      headerName: "Ref Code",
+      width: 150,
+      valueGetter: (params) => params,
     },
     { field: "adult", headerName: "Adult", width: 100 },
     { field: "children", headerName: "Children", width: 100 },
@@ -168,17 +190,12 @@ export default function ReportPage() {
           <Toolbar />
 
           <LocalizationProvider dateAdapter={AdapterDayjs} locale={enGB}>
-            <Grid
-              container
-              spacing={0.5}
-              sx={{ marginBottom: 2 }}
-            >
+            <Grid container spacing={0.5} sx={{ marginBottom: 2 }}>
               <Grid item xs={4} sm={4}>
                 <DatePicker
                   label="From Date"
                   value={fromDate}
                   inputFormat="dd/MM/yyyy"
-                  
                   onChange={(newValue) => setFromDate(newValue)}
                   renderInput={(params) => <TextField {...params} />}
                 />
@@ -287,6 +304,14 @@ export default function ReportPage() {
                         {currentBooking.userId?.address}
                       </TableCell>
                     </TableRow>
+                    <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                          Ref Code
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.franchiseCode}
+                          </TableCell>
+                        </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -344,6 +369,18 @@ export default function ReportPage() {
                         {currentBooking.planId?.title}
                       </TableCell>
                     </TableRow>
+                    <TableRow>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            Sub Package
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                            {
+                              currentBooking.planId?.subpackages[
+                                currentBooking?.selectedSubPackage
+                              ].name 
+                            }
+                          </TableCell>
+                        </TableRow>
                     <TableRow>
                       <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                         Adult Price

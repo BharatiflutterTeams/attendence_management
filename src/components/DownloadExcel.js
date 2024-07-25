@@ -1,27 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 
 const DownloadExcel = ({ bookings }) => {
+  
+ 
+  //console.log("bookings", bookings);
+  const finalBookings = bookings.map((booking)=> ( {...booking, 
+    subpackage:booking?.planId?.subpackages[booking?.selectedSubPackage]?.name}))
+    
+  
+   
+  
 
   const handleDownload = () => {
-    const formattedData = bookings.map(booking => ({
-      bookingId: booking?._id,
-      bookingDate: booking?.bookingDate,
-      bookingViaPerson: booking?.bookingViaPerson,
-      totalAmount: booking?.totalAmount,
-      paymentMethod: booking?.paymentMethod,
-      adult_Count: booking?.adult,
-      adultPrice: booking?.adultPrice,
-      children_Count: booking?.children,
-      childrenPrice: booking?.childrenPrice,
-      planTitle: booking?.planId?.title,
-      planDescription: booking?.planId?.description,
-      userId: booking?.userId?._id,
+    const formattedData = finalBookings.map(booking => ({
+      bookingDate:new Date(booking?.bookingDate).toISOString().split("T")[0],
       userName: booking?.userId?.name,
+      adult_Count: booking?.adult,
+      children_Count: booking?.children,
+      adultPrice: booking?.adultPrice,
+      childrenPrice: booking?.childrenPrice,
+      totalAmount: booking?.totalAmount,
+      planTitle: booking?.planId?.title,
+      Sub_Package : booking?.subpackage,
+      Ref_Code : booking?.franchiseCode,
       userEmail: booking?.userId?.email,
       userPhone: booking?.userId?.phone,
+      bookingId: booking?._id,
+      userId: booking?.userId?._id,
+      bookingViaPerson: booking?.bookingViaPerson,
+      paymentMethod: booking?.paymentMethod,
+      planDescription: booking?.planId?.description,
       userAddress: booking?.userId?.address,
       userGST: booking?.userId?.gstNumber,
     }));

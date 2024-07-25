@@ -356,7 +356,9 @@ export default function BookingPage() {
 
   const handleMenuOpen = (event, booking) => {
     setAnchorEl(event.currentTarget);
+    console.log("anchor" , event.currentTarget);
     setCurrentBooking(booking);
+    console.log("current" , booking);
   };
 
   const handleMenuClose = () => {
@@ -366,7 +368,7 @@ export default function BookingPage() {
   ///////////Printing logic//////////
   const handlePrintOpen = (row) => {
     setRowData(row);
-    console.log("row", row);
+    // console.log("row", row);
     setTimeout(() => {
       document.getElementById("print-button").click();
     }, 500);
@@ -448,8 +450,20 @@ export default function BookingPage() {
     {
       field: "planId",
       headerName: "Plan",
-      width: 300,
+      width: 150,
       valueGetter: (params) => params?.title || "Unknown",
+    },
+    {
+      field: "subpackage",
+      headerName: "Sub Package",
+      width: 250,
+      valueGetter: (params) => params || "Unknown",
+    },
+    {
+      field:"franchiseCode",
+      headerName : "Ref Code",
+      width : 150,
+      valueGetter : (params) => params,
     },
     { field: "adult", headerName: "Adult", width: 100 },
     { field: "children", headerName: "Children", width: 100 },
@@ -473,7 +487,7 @@ export default function BookingPage() {
           </IconButton>
           <Menu
             anchorEl={anchorEl}
-            open={Boolean(anchorEl) && currentBooking === params.row}
+            open={Boolean(anchorEl)}
             onClose={handleMenuClose}
           >
             <MenuItem onClick={handleViewOpen}>View Details</MenuItem>
@@ -552,8 +566,11 @@ export default function BookingPage() {
   const filteredBookings = selectedPlan
     ? bookings.filter((booking) => booking.planId?._id == selectedPlan?._id)
     : bookings;
-  console.log("filteredBookings ", filteredBookings);
-  console.log("selectedPlan", selectedPlan);
+  const finalBookings = filteredBookings.map((booking)=> ( {...booking, 
+                                        subpackage:booking?.planId?.subpackages[booking.selectedSubPackage]?.name}))
+   //console.log("finalBookings", finalBookings)
+  //console.log("filteredBookings ", filteredBookings);
+  //console.log("selectedPlan", selectedPlan);
 
   return (
     <>
@@ -1027,6 +1044,14 @@ export default function BookingPage() {
                             {currentBooking.userId?.address}
                           </TableCell>
                         </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                          Ref Code
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.franchiseCode}
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -1332,14 +1357,14 @@ export default function BookingPage() {
 
           <Box sx={{ height: "69vh", width: "100%" }}>
             <DataGrid
-              rows={filteredBookings}
+              rows={finalBookings}
               columns={columns}
               pageSize={pageSize}
               pagination
               rowsPerPageOptions={[5, 10, 25, 50]}
               rowCount={rowCount}
-              paginationMode="server"
-              onPageChange={(newPage) => setPage(newPage)}
+              //paginationMode="server"
+              //onPageChange={(newPage) => setPage(newPage)}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               getRowId={(row) => row._id}
               sx={{ background: "#ffffff" }}

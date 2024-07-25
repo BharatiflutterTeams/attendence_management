@@ -4,7 +4,7 @@ import useAppStore from '../appStore';
 
 const PrintComponent = React.forwardRef((_, ref) => {
   const rowData = useAppStore((state) => state.rowData);
-  console.log("RowData", rowData);
+  //console.log("RowData", rowData);
 
   if (!rowData) {
     return null;

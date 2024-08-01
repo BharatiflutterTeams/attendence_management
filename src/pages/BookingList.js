@@ -22,7 +22,7 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid }  from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import axios from "axios";
 import endpoints from "../Endpoints/endpoint";
@@ -41,11 +41,7 @@ import ReactToPrint from "react-to-print";
 import PrintComponent from "../components/PrintComponent";
 import DownloadExcel from "../components/DownloadExcel";
 import styles from "./BookingList.module.css";
-import {
-  AttachMoney as AttachMoneyIcon,
-  Person as PersonIcon,
-  ChildFriendly as ChildIcon,
-} from "@mui/icons-material";
+
 import ChildCareIcon from "@mui/icons-material/ChildCare";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
@@ -560,6 +556,8 @@ export default function BookingPage() {
       handleSave();
     }
   };
+
+  
 
   //****************************************************** */
 
@@ -1361,10 +1359,10 @@ export default function BookingPage() {
               columns={columns}
               pageSize={pageSize}
               pagination
-              rowsPerPageOptions={[5, 10, 25, 50]}
+              rowsPerPageOptions={[5,10,25]}
               rowCount={rowCount}
-              //paginationMode="server"
-              //onPageChange={(newPage) => setPage(newPage)}
+              paginationMode="client"
+              onPageChange={(newPage) => setPage(newPage)}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               getRowId={(row) => row._id}
               sx={{ background: "#ffffff" }}

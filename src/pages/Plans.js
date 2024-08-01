@@ -39,6 +39,9 @@ import isBetween from "dayjs/plugin/isBetween";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import { AddCircle, RemoveCircle } from '@mui/icons-material'
 import { useEffect } from "react";
+import PlanStatusSelect from "../components/PlanStatusSelect";
+
+import PlanCard from "../components/PlanCard";
 
 dayjs.extend(isBetween);
 dayjs.extend(advancedFormat);
@@ -66,6 +69,7 @@ export default function PlansPage() {
     adult_age_range: "",
     child_age_range: "",
     //notes:""
+    status : "on"
   });
   const [selectedPlan, setSelectedPlan] = React.useState(null);
   const [deletePlanId, setDeletePlanId] = React.useState(null);
@@ -98,6 +102,7 @@ export default function PlansPage() {
   const [adminRole, setAdminRole] = React.useState();
   const [fromTime, setFromTime] = React.useState();
   const [toTime, setToTime] = React.useState();
+  const [status, setStatus] = React.useState('on');
   // const [fromPeriod, setFromPeriod] = React.useState('AM');
   // const [toPeriod, setToPeriod] = React.useState('PM');
 
@@ -109,19 +114,21 @@ export default function PlansPage() {
 
   useEffect(() => {
     if (selectedPlan) {
-      const fromDate = dayjs();
-      const [fromHours, fromMinutes] = selectedPlan?.timing?.fromtime
-        .split(":")
-        .map(Number);
+      const [fromHours, fromMinutes] = selectedPlan?.timing?.fromtime.split(":").map(Number);
+      const fromPeriod = selectedPlan?.timing?.fromperiod; // 'AM' or 'PM'
 
-      setFromTime(fromDate.hour(fromHours).minute(fromMinutes));
+      const fromHours24 = fromPeriod === 'PM' && fromHours < 12 ? fromHours + 12 : fromHours;
+      const fromHours12 = fromHours % 12 || 12; // Convert to 12-hour format
 
-      const toDate = dayjs();
-      const [toHours, toMinutes] = selectedPlan?.timing?.totime
-        .split(":")
-        .map(Number);
+      setFromTime(dayjs().hour(fromHours24).minute(fromMinutes));
 
-      setToTime(toDate.hour(toHours).minute(toMinutes));
+      const [toHours, toMinutes] = selectedPlan?.timing?.totime.split(":").map(Number);
+      const toPeriod = selectedPlan?.timing?.toperiod; // 'AM' or 'PM'
+
+      const toHours24 = toPeriod === 'PM' && toHours < 12 ? toHours + 12 : toHours;
+      const toHours12 = toHours % 12 || 12; // Convert to 12-hour format
+
+      setToTime(dayjs().hour(toHours24).minute(toMinutes));
     }
   }, [selectedPlan]);
 
@@ -222,7 +229,7 @@ export default function PlansPage() {
         plan_coupon: [],
         adult_age_range: "",
         child_age_range: "",
-
+        status:'on'
         //notes:""
       });
       handleClose();
@@ -445,8 +452,10 @@ export default function PlansPage() {
     }
   };
 
-  //************************/
-
+  //**************Handle status Change**********/
+      const handleStatusChange = (newStatus)=>{
+         setStatus(newStatus)
+      }
   //***********Handle Sub Packages ***************************/
   const handleAddSubPackageClick = () => {
     setCurrentSubPackage({
@@ -501,6 +510,8 @@ export default function PlansPage() {
       plan.title.toLowerCase().includes(search.toLowerCase()) ||
       plan.description.toLowerCase().includes(search.toLowerCase())
   );
+
+
 
   return (
     <>
@@ -794,90 +805,7 @@ export default function PlansPage() {
                 ))}
               </Box>
 
-              {/* <Box
-                sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}
-              >
-                <TextField
-                  margin="dense"
-                  label="Adult Gold Package"
-                  fullWidth
-                  variant="outlined"
-                  value={adultPoint}
-                  onChange={handleAdultGoldChange}
-                />
-                <Button
-                  onClick={handleAddAdultPoint}
-                  disabled={newPlan.adult_gold_package.length >= 5}
-                  variant="outlined"
-                   size="small"
-                   sx={{ml:'10px' , mt:'5px'}}
-                >
-                  Add Point
-                </Button>
-              </Box>
-              <Box>
-                {newPlan.adult_gold_package?.map((Point, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: 1,
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {index + 1}) {Point}
-                    </Typography>
-                    <Button onClick={() => handleRemoveAdultPoint(index)}  variant="outlined"
-                      size="small">
-                      Remove
-                    </Button>
-                  </Box>
-                ))}
-                </Box>
-                 
-                 
-              <Box
-                sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}
-              >
-                <TextField
-                  margin="dense"
-                  label="Child Gold Package"
-                  fullWidth
-                  variant="outlined"
-                  value={childPoint}
-                  onChange={handleChildGoldChange}
-                />
-                <Button
-                  onClick={handleAddChildPoint}
-                  disabled={newPlan.child_gold_package.length >= 5}
-                  variant="outlined"
-                   size="small"
-                   sx={{ml:'10px' , mt:'5px'}}
-                >
-                  Add Point
-                </Button>
-              </Box>
-              <Box>
-                {newPlan.child_gold_package?.map((Point, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: 1,
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {index + 1}) {Point}
-                    </Typography>
-                    <Button onClick={() => handleRemoveChildPoint(index)}  variant="outlined"
-                       size="small">
-                      Remove
-                    </Button>
-                  </Box>
-                ))}
-                </Box> */}
+              
               <TextField
                 autoFocus
                 required
@@ -1215,7 +1143,7 @@ export default function PlansPage() {
             </DialogActions>
           </Dialog>
 
-          <Box sx={{ marginTop: 2 }}>
+          {/* <Box sx={{ marginTop: 2 }}>
             {filteredPlans.map((plan, index) => (
               <Card
                 key={plan._id}
@@ -1228,8 +1156,14 @@ export default function PlansPage() {
                   background: "#FFFFFF",
                   boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.16)",
                 }}
-              >
-                <Box
+                className={`${styles.card} ${status === 'temporary closed' ? styles.temporaryClosed : status ==='closed'? styles.closed:''}`}
+              > */}
+                 {/* <PlanStatusSelect
+                      planId={plan._id}
+                      initialStatus={plan.status ? plan.status : ''}
+                      onStatusChange={handleStatusChange}
+                 /> */}
+                {/* <Box
                   sx={{ display: "flex", flexDirection: "column", width: 200 }}
                 >
                   <CardMedia
@@ -1247,16 +1181,16 @@ export default function PlansPage() {
                     }
                     alt="Card image"
                   />
-                </Box>
-                <Box
+                </Box> */}
+                {/* <Box
                   sx={{
                     display: "flex",
                     flexDirection: "column",
                     flex: 1,
                     p: 2,
                   }}
-                >
-                  <CardContent sx={{ p: 0, flex: 1 }}>
+                > */}
+                  {/* <CardContent sx={{ p: 0, flex: 1 }}>
                     <Typography
                       variant="h5"
                       component="div"
@@ -1270,8 +1204,8 @@ export default function PlansPage() {
                       sx={{ mb: 2 }}
                     >
                       {plan.description}
-                    </Typography>
-                    <Box sx={{ mt: 2 }}>
+                    </Typography> */}
+                    {/* <Box sx={{ mt: 2 }}>
                       <Typography varaint="body2" color="text.secondary">
                         <strong>Sub-Packages: </strong>
                         {plan.subpackages
@@ -1282,20 +1216,20 @@ export default function PlansPage() {
                         <strong>Timing: </strong>
                         {plan.timing?.fromtime} {plan.timing?.fromperiod} to{" "}
                         {plan.timing?.totime} {plan.timing?.toperiod}
-                      </Typography>
+                      </Typography> */}
                       {/* <Typography variant="body2" color="text.secondary">
                         <strong>Image Links: </strong>{" "}
                         {plan.image_list.join(", ")}
                       </Typography> */}
-                      <Typography variant="body2" color="text.secondary">
+                      {/* <Typography variant="body2" color="text.secondary">
                         <strong>Coupons: </strong>{" "}
                         {plan.plan_coupon
                           .map((coupon) => coupon.coupon_code)
                           .join(", ")}
                       </Typography>
                     </Box>
-                  </CardContent>
-                  {adminRole === "superadmin" && (
+                  </CardContent> */}
+                  {/* {adminRole === "superadmin" && (
                     <Box
                       sx={{
                         display: "flex",
@@ -1309,8 +1243,8 @@ export default function PlansPage() {
                         sx={{ mr: 1 }}
                         variant="text"
                         color="primary"
-                      >
-                        Edit
+                      > */}
+                        {/* Edit
                       </Button>
                       <Button
                         size="small"
@@ -1320,12 +1254,24 @@ export default function PlansPage() {
                       >
                         Delete
                       </Button>
-                    </Box>
-                  )}
+                    </Box> */}
+                  {/* )}
                 </Box>
               </Card>
             ))}
-          </Box>
+          </Box> */}
+
+          <Box sx={{ marginTop: 2 }}>
+      {filteredPlans.map((plan) => (
+        <PlanCard
+          key={plan._id}
+          plan={plan}
+          adminRole={adminRole}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+        />
+      ))}
+         </Box>
         </Box>
       </Box>
     </>

@@ -90,9 +90,9 @@ const PlanCard = ({ plan, adminRole, handleEdit, handleDelete }) => {
             <Button size="small" onClick={() => handleEdit(plan)} sx={{ mr: 1 }} variant="text" color="primary">
               Edit
             </Button>
-            <Button size="small" onClick={() => handleDelete(plan._id)} variant="text" color="secondary">
+            {/* <Button size="small" onClick={() => handleDelete(plan._id)} variant="text" color="secondary">
               Delete
-            </Button>
+            </Button> */}
           </Box>
         )}
          

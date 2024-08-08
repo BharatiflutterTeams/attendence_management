@@ -165,6 +165,7 @@ export default function BookingConfirmPage() {
         setIsExpired(true);
       } else if (bookingDate.isAfter(today, "day")) {
         setSuccess("future");
+        setIsExpired(false);
       } else {
         setSuccess(true);
       }

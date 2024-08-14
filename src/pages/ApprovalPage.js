@@ -181,6 +181,7 @@ export default function ApprovalPage() {
                   <Typography>Date: {new Date(selectedBooking.bookingDate).toLocaleDateString("en-GB")}</Typography>
                   <Typography>Complementary Person: {selectedBooking?.complementaryPerson}</Typography>
                   <Typography>Plan: {selectedBooking?.planId.title}</Typography>
+                  <Typography>Sub Package : {selectedBooking?.selectedSubPackage}</Typography>
                   <Typography>Email: {selectedBooking?.userId.email}</Typography>
                   <Typography>Phone: {selectedBooking?.userId.phone}</Typography>
                   <Typography>GST Number: {selectedBooking?.userId.gstNumber}</Typography>

@@ -77,7 +77,7 @@ export default function BookingPage() {
     email: "",
     phone: "",
     planId: "",
-    selectedSubPackage: 0,
+    selectedSubPackage: {},
     gstNumber: "",
     address: "",
     bookingDate: new Date().toISOString().split("T")[0],
@@ -267,7 +267,7 @@ export default function BookingPage() {
         email: "",
         phone: "",
         planId: "",
-        selectedSubPackage: 0,
+        selectedSubPackage: {},
         gstNumber: "",
         address: "",
         bookingDate: new Date().toISOString().split("T")[0],
@@ -322,13 +322,14 @@ export default function BookingPage() {
         (subpackage) => subpackage.name === newValue.name
       );
       const subpackageName = choosePlan?.subpackages[selectedIndex].name;
+      const subpackage = choosePlan?.subpackages[selectedIndex];
 
       console.log("selected sub package", subpackageName);
       // console.log("slected package", newValue);
       if (subpackageName) {
         setNewBooking({
           ...newBooking,
-          selectedSubPackage: selectedIndex,
+          selectedSubPackage: subpackage,
           subpackageName: subpackageName,
         });
       }
@@ -337,7 +338,7 @@ export default function BookingPage() {
     } else {
       setNewBooking({
         ...newBooking,
-        selectedSubPackage: 0,
+        selectedSubPackage: choosePlan?.subpackages[0],
       });
     }
   };
@@ -565,7 +566,7 @@ export default function BookingPage() {
     ? bookings.filter((booking) => booking.planId?._id == selectedPlan?._id)
     : bookings;
   const finalBookings = filteredBookings.map((booking)=> ( {...booking, 
-                                        subpackage:booking?.planId?.subpackages[booking.selectedSubPackage]?.name}))
+                                        subpackage:booking?.selectedSubPackage?.name}))
    //console.log("finalBookings", finalBookings)
   //console.log("filteredBookings ", filteredBookings);
   //console.log("selectedPlan", selectedPlan);
@@ -746,7 +747,7 @@ export default function BookingPage() {
                 onError={!!errors.selectedSubPackage}
                 helperText={errors.selectedSubPackage}
                 value={
-                  choosePlan?.subpackages?.[newBooking.selectedSubPackage] ||
+                  newBooking.selectedSubPackage ||
                   null
                 }
                 onChange={handleSubPackageChange}
@@ -1105,7 +1106,7 @@ export default function BookingPage() {
                             Plan
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                            {currentBooking.planId?.title}
+                            {currentBooking?.planId?.title}
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -1114,9 +1115,7 @@ export default function BookingPage() {
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                             {
-                              currentBooking.planId?.subpackages[
-                                currentBooking?.selectedSubPackage
-                              ].name 
+                              currentBooking?.selectedSubPackage?.name
                             }
                           </TableCell>
                         </TableRow>
@@ -1125,7 +1124,7 @@ export default function BookingPage() {
                             Adult Price
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            ₹{currentBooking.adultPrice}
+                            ₹{currentBooking?.adultPrice}
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -1133,7 +1132,7 @@ export default function BookingPage() {
                             Children Price
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                            ₹{currentBooking.childrenPrice}
+                            ₹{currentBooking?.childrenPrice}
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -1141,7 +1140,7 @@ export default function BookingPage() {
                             Total Price
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            ₹{currentBooking.totalAmount}
+                            ₹{currentBooking?.totalAmount}
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -1162,8 +1161,8 @@ export default function BookingPage() {
                             Payment Method
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            {currentBooking.paymentMethod
-                              ? currentBooking.paymentMethod
+                            {currentBooking?.paymentMethod
+                              ? currentBooking?.paymentMethod
                               : "Online Booking"}
                           </TableCell>
                         </TableRow>
@@ -1173,7 +1172,7 @@ export default function BookingPage() {
                               UPI ID
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.upiId}
+                              {currentBooking?.upiId}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1184,7 +1183,7 @@ export default function BookingPage() {
                               RNN Number
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.creditCardNumber}
+                              {currentBooking?.creditCardNumber}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1195,7 +1194,7 @@ export default function BookingPage() {
                               Reference ID/Room Number
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.referenceId}
+                              {currentBooking?.referenceId}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1206,7 +1205,7 @@ export default function BookingPage() {
                               Approved By
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              {currentBooking.complementaryPerson}
+                              {currentBooking?.complementaryPerson}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1218,7 +1217,7 @@ export default function BookingPage() {
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking.bookingViaPerson
-                                ? currentBooking.bookingViaPerson
+                                ? currentBooking?.bookingViaPerson
                                 : "Atithi booking engine"}
                             </TableCell>
                           </TableRow>

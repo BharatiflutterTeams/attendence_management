@@ -88,7 +88,7 @@ export default function ReportPage() {
       //console.log("bookings by range", response.data.bookings);
       const finalBookings = response.data.bookings.map((booking) => ({
         ...booking,
-        subpackage: booking?.planId?.subpackages[booking.selectedSubPackage]?.name || "unknown",
+        subpackage: booking?.selectedSubPackage?.name || "unknown",
       }));
       setBookings(finalBookings);
     } catch (error) {
@@ -375,9 +375,7 @@ export default function ReportPage() {
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                             {
-                              currentBooking.planId?.subpackages[
-                                currentBooking?.selectedSubPackage
-                              ].name 
+                              currentBooking?.selectedSubPackage?.name
                             }
                           </TableCell>
                         </TableRow>
@@ -397,6 +395,14 @@ export default function ReportPage() {
                         ₹{currentBooking.childrenPrice}
                       </TableCell>
                     </TableRow>
+                    <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Total Price
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            ₹{currentBooking?.totalAmount}
+                          </TableCell>
+                        </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>

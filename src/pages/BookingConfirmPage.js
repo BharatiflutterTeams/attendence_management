@@ -176,9 +176,8 @@ export default function BookingConfirmPage() {
     }
   };
 
-  const selectedSubPackage =
-    planDetails?.subpackages[bookingDetails?.selectedSubPackage];
-  console.log("selectedSubPackage", selectedSubPackage);
+  const selectedSubPackage = bookingDetails?.selectedSubPackage
+  //console.log("selectedSubPackage", selectedSubPackage);
   const adultActivities = selectedSubPackage?.adult_activities || [];
   const childActivities = selectedSubPackage?.child_activities || [];
 
@@ -363,6 +362,22 @@ export default function BookingConfirmPage() {
                             bookingDetails?.children *
                               bookingDetails?.childrenPrice}
                         </b>
+                      </span>
+                    </DetailRow>
+                    <DetailRow>
+                      <span>
+                        <b>Plan:</b>
+                      </span>
+                      <span>
+                        <b>{planDetails?.title}</b>
+                      </span>
+                    </DetailRow>
+                    <DetailRow>
+                      <span>
+                        <b>Sub-Package:</b>
+                      </span>
+                      <span>
+                        <b>{bookingDetails?.selectedSubPackage?.name}</b>
                       </span>
                     </DetailRow>
 

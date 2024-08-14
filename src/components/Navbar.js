@@ -219,7 +219,7 @@ const handleLogout=()=>{
       {renderMobileMenu}
       {renderMenu}
 
-       {/*******************supprt dialog *******************************************/}
+       {/*******************support dialog *******************************************/}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{color:"white", background:'#867AE9'}}>Contact Support</DialogTitle>
         <DialogContent sx={{mt:"1rem"}}>

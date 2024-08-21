@@ -100,6 +100,7 @@ export default function BookingPage() {
     new Date().toISOString().split("T")[0]
   );
   const [plans, setPlans] = useState([]);
+  const [bookingPlans , setBookingPlans] = useState([]);
 
   const paymentOptions = [...companyData?.paymentMethods];
   const complementaryPersons =
@@ -116,7 +117,7 @@ export default function BookingPage() {
     let adultPrice = 0;
     let childPrice = 0;
 
-    if (choosePlan.subpackages) {
+    if (choosePlan?.subpackages) {
       adultPrice =
         choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price || 0;
       childPrice =
@@ -205,7 +206,10 @@ export default function BookingPage() {
   const fetchPlans = async () => {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
-      setPlans(response.data.plan);
+      let plans = response.data.plan;
+      plans = plans?.filter((plan)=> plan.status === 'on');
+       setPlans(response.data.plan);
+       setBookingPlans(plans);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -724,10 +728,10 @@ export default function BookingPage() {
               />
 
               <Autocomplete
-                options={plans}
+                options={bookingPlans}
                 getOptionLabel={(option) => option.title}
                 value={
-                  plans.find((plan) => plan._id === newBooking.planId) || null
+                  bookingPlans.find((plan) => plan._id === newBooking.planId) || null
                 }
                 onChange={handlePlanChange}
                 renderInput={(params) => (
@@ -1180,7 +1184,7 @@ export default function BookingPage() {
                         {currentBooking.creditCardNumber && (
                           <TableRow>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                              RNN Number
+                              RRN Number
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking?.creditCardNumber}

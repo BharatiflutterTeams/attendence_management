@@ -39,7 +39,7 @@ const drawerWidth = 240;
 export default function ReportPage() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
-  
+  const [adminRole, setAdminRole] = useState();
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [pageSize, setPageSize] = useState(1000);
@@ -62,6 +62,7 @@ export default function ReportPage() {
     if (token && token !== "" && token !== null) {
       const decoded = jwtDecode(token);
       const role = decoded.role;
+      setAdminRole(role);
       if (role !== "superadmin") {
         navigate("/");
       }
@@ -149,6 +150,12 @@ export default function ReportPage() {
     { field: "children", headerName: "Children", width: 100 },
     {
       field: "bookingDate",
+      headerName: "Reservation Date",
+      width: 150,
+      valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
+    },
+    {
+      field: "createdAt",
       headerName: "Booking Date",
       width: 150,
       valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
@@ -305,13 +312,13 @@ export default function ReportPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                          Ref Code
-                          </TableCell>
-                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            {currentBooking.franchiseCode}
-                          </TableCell>
-                        </TableRow>
+                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                        Ref Code
+                      </TableCell>
+                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                        {currentBooking.franchiseCode}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -370,15 +377,13 @@ export default function ReportPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                            Sub Package
-                          </TableCell>
-                          <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                            {
-                              currentBooking?.selectedSubPackage?.name
-                            }
-                          </TableCell>
-                        </TableRow>
+                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                        Sub Package
+                      </TableCell>
+                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                        {currentBooking?.selectedSubPackage?.name}
+                      </TableCell>
+                    </TableRow>
                     <TableRow>
                       <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                         Adult Price
@@ -396,13 +401,13 @@ export default function ReportPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            Total Price
-                          </TableCell>
-                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            ₹{currentBooking?.totalAmount}
-                          </TableCell>
-                        </TableRow>
+                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                        Total Price
+                      </TableCell>
+                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                        ₹{currentBooking?.totalAmount}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -445,6 +450,17 @@ export default function ReportPage() {
                         </TableCell>
                       </TableRow>
                     )}
+                    {currentBooking.paymentId && (
+                      <TableRow>
+                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                          Payment ID
+                        </TableCell>
+                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                          {currentBooking?.paymentId}
+                        </TableCell>
+                      </TableRow>
+                    )}
+
                     {currentBooking.referenceId && (
                       <TableRow>
                         <TableCell style={{ backgroundColor: "#f5f5f5" }}>
@@ -465,7 +481,7 @@ export default function ReportPage() {
                         </TableCell>
                       </TableRow>
                     )}
-                    {currentBooking.adminRole === "superadmin" && (
+                    {adminRole === "superadmin" && (
                       <TableRow>
                         <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                           Booking done by

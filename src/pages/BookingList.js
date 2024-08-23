@@ -470,6 +470,12 @@ export default function BookingPage() {
     { field: "children", headerName: "Children", width: 100 },
     {
       field: "bookingDate",
+      headerName: "Reservation Date",
+      width: 150,
+      valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
+    },
+    {
+      field: "createdAt",
       headerName: "Booking Date",
       width: 150,
       valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
@@ -1081,11 +1087,21 @@ export default function BookingPage() {
                         </TableRow>
                         <TableRow>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                            Booking Date
+                            Reservation Date
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                             {new Date(
                               currentBooking.bookingDate
+                            )?.toLocaleDateString("en-GB")}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            Booking Date
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {new Date(
+                              currentBooking.createdAt
                             )?.toLocaleDateString("en-GB")}
                           </TableCell>
                         </TableRow>
@@ -1188,6 +1204,16 @@ export default function BookingPage() {
                             </TableCell>
                             <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                               {currentBooking?.creditCardNumber}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                         {currentBooking.paymentId && (
+                          <TableRow>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              Payment ID
+                            </TableCell>
+                            <TableCell style={{ backgroundColor: "#f5f5f5" }}>
+                              {currentBooking?.paymentId}
                             </TableCell>
                           </TableRow>
                         )}

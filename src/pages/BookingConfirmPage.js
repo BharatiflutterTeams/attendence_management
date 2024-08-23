@@ -152,7 +152,7 @@ export default function BookingConfirmPage() {
       const response = await axios.get(
         `${endpoints.serverBaseURL}/api/admin/${bookingId}`
       );
-
+      const booking = response.data.ticketData.booking;
       setUserDetails(response.data.ticketData.userDetails);
       setSuccess(response.data.success);
       setplanDetails(response.data.ticketData.plan);
@@ -161,6 +161,11 @@ export default function BookingConfirmPage() {
       const bookingDate = moment(response.data.ticketData.booking.bookingDate);
       const today = moment();
 
+      if (booking?.scanned === "true") {
+        setIsExpired(true);
+        return;
+      }
+
       if (bookingDate.isBefore(today, "day")) {
         setIsExpired(true);
       } else if (bookingDate.isAfter(today, "day")) {
@@ -168,7 +173,18 @@ export default function BookingConfirmPage() {
         setIsExpired(false);
       } else {
         setSuccess(true);
+        const putresponse = await axios.put(
+          `${endpoints.serverBaseURL}/api/admin/${bookingId}/scan`,
+          {
+            scanned: "true",
+          }
+        );
+        console.log("scan booking resposnse", putresponse);
+      
       }
+
+   
+       
     } catch (error) {
       console.error("Error fetching booking details:", error);
       setSuccess(false);
@@ -176,7 +192,7 @@ export default function BookingConfirmPage() {
     }
   };
 
-  const selectedSubPackage = bookingDetails?.selectedSubPackage
+  const selectedSubPackage = bookingDetails?.selectedSubPackage;
   //console.log("selectedSubPackage", selectedSubPackage);
   const adultActivities = selectedSubPackage?.adult_activities || [];
   const childActivities = selectedSubPackage?.child_activities || [];
@@ -264,8 +280,13 @@ export default function BookingConfirmPage() {
                     alt="Confirmed"
                   />
                   <Title>Booking Confirmed</Title>
-                  <br/>
-                  <h6>We are happy to welcome you on {new Date(bookingDetails.bookingDate).toLocaleDateString("en-GB")}</h6>
+                  <br />
+                  <h6>
+                    We are happy to welcome you on{" "}
+                    {new Date(bookingDetails.bookingDate).toLocaleDateString(
+                      "en-GB"
+                    )}
+                  </h6>
                 </Header>
               ) : (
                 <>

@@ -21,6 +21,7 @@ import {
   TableContainer,
   TableRow,
   Paper,
+  FormHelperText
 } from "@mui/material";
 import { DataGrid }  from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -70,8 +71,12 @@ export default function BookingPage() {
   const [choosePlan, setChoosePlan] = useState({});
   const [totalAdultPrice, setTotalAdultPrice] = useState(0);
   const [totalChildPrice, setTotalChildPrice] = useState(0);
+  const [selectedAdultPrice, setSelectedAdultPrice] = useState(0);
+  const [selectedChildrenPrice, setSelectedChildrenPrice] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedSubPackageIndex, setSelectedSubPackageIndex] = useState(0);
+  const [showWarning, setShowWarning] = useState(false);
+  
   const [newBooking, setNewBooking] = useState({
     name: "",
     email: "",
@@ -119,10 +124,11 @@ export default function BookingPage() {
 
     if (choosePlan?.subpackages) {
       adultPrice =
-        choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price || 0;
+        choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price < selectedAdultPrice ? selectedAdultPrice : choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price;
       childPrice =
-        choosePlan?.subpackages[selectedSubPackageIndex]?.child_price || 0;
+        choosePlan?.subpackages[selectedSubPackageIndex]?.child_price < selectedChildrenPrice ? selectedChildrenPrice : choosePlan?.subpackages[selectedSubPackageIndex]?.child_price ;
     }
+ 
 
     const totalAdultAmount = adultCount * adultPrice;
     const totalChildAmount = childCount * childPrice;
@@ -149,7 +155,7 @@ export default function BookingPage() {
     fetchBookings();
     fetchPlans();
     calculateTotal(newBooking.adult, newBooking.children);
-  }, [page, pageSize, selectedDate, choosePlan, selectedSubPackageIndex]);
+  }, [page, pageSize, selectedDate, choosePlan, selectedSubPackageIndex, selectedAdultPrice,selectedChildrenPrice]);
 
   useEffect(() => {
     checkAuth();
@@ -299,6 +305,19 @@ export default function BookingPage() {
     setNewBooking({ ...newBooking, [name]: value });
   };
 
+  const handlePriceChange = (event) => {
+    setSelectedAdultPrice(event.target.value);
+  };
+  const handleChildrenPriceChange = (event) => {
+      const newValue = event.target.value;
+      setSelectedChildrenPrice(event.target.value);
+     // Show warning if the new value is less than the minimum required value
+    //  if (newValue && newValue < choosePlan?.subpackages[selectedSubPackageIndex]?.child_price) {
+    //   setShowWarning(true);
+    // } else {
+    //   setShowWarning(false);
+    // }
+  };
   const handleAdultCountChange = (value) => {
     setNewBooking((prev) => {
       const updatedBooking = { ...prev, adult: value };
@@ -659,6 +678,7 @@ export default function BookingPage() {
           </Box>
 
           {/* ADD booking form */}
+          {/* TODO: add custom price fild  */}
           <Dialog open={open} onClose={handleClose}>
             <DialogTitle
               sx={{
@@ -821,6 +841,16 @@ export default function BookingPage() {
                   <Typography variant="h7" className={styles.counterLabel}>
                     Adults
                   </Typography>
+                  <TextField
+                margin="dense"
+                label="Adult Price"
+                required
+                fullWidth
+                variant="outlined"
+                name="adultprice"
+                value={selectedAdultPrice}
+                onChange={handlePriceChange}
+              />
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                       className={styles.counterButton}
@@ -849,6 +879,21 @@ export default function BookingPage() {
                   <Typography variant="h7" className={styles.counterLabel}>
                     Children
                   </Typography>
+                  <TextField
+                margin="dense"
+                label="Children Price"
+                required
+                fullWidth
+                variant="outlined"
+                name="childrenprice"
+                value={selectedChildrenPrice}
+                onChange={handleChildrenPriceChange}
+              />
+                  {/* {showWarning && (
+                    <FormHelperText error>
+                      The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.child_price}.
+                    </FormHelperText>
+                  )} */}
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                       className={styles.counterButton}

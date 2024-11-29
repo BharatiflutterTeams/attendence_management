@@ -7,6 +7,7 @@ const RequireAuth = ({ allowedRoles }) => {
   if (!roles) {
     return <Navigate to="/login" replace />;
   }
+  
 
   const isAuthorized = roles.some(role => allowedRoles.includes(role));
   console.log('Is Authorized:', isAuthorized);

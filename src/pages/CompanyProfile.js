@@ -43,6 +43,7 @@ export default function CompanyProfile() {
   const companyData = useAppStore((state) => state.companyData);
   //const[loading , setLoading] = useState(true);
   const [formValues, setFormValues] = useState({ ...companyData });
+  const [formprivacyValues, setFormPrivacyValues] = useState({ ...companyData });
   const [images, setImages] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
@@ -74,6 +75,9 @@ export default function CompanyProfile() {
   if (!formValues) {
     return <Preloader />;
   }
+  if(!formprivacyValues){
+    return <Preloader></Preloader>
+  }
 
   // const fetchDetails = async () => {
   //   try {
@@ -89,6 +93,10 @@ export default function CompanyProfile() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormValues({ ...formValues, [name]: value });
+  };
+  const privacyhandleChange = (event) => {
+    const { name, value } = event.target;
+    setFormPrivacyValues({ ...formValues, [name]: value });
   };
 
   const handleComplementaryPersonChange = (index, field, value) => {
@@ -459,6 +467,26 @@ export default function CompanyProfile() {
                     errors.cancellation_policy
                       ? errors.cancellation_policy
                       : `${formValues?.cancellation_policy?.length}/2000`
+                  }
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="privacy_policy"
+                  label="Privacy Policy"
+                  name="privacy_policy"
+                  multiline
+                  rows={6}
+                  value={formValues?.privacy_policy}
+                  onChange={handleChange}
+                  required
+                  inputProps={{ maxLength: 2000 }}
+                  error={!!errors.privacy_policy}
+                  helperText={
+                    errors.privacy_policy
+                      ? errors.privacy_policy
+                      : `${formValues?.privacy_policy?.length}/2000`
                   }
                 />
               </Grid>

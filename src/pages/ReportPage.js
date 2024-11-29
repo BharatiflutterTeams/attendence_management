@@ -443,7 +443,7 @@ export default function ReportPage() {
                     {currentBooking.creditCardNumber && (
                       <TableRow>
                         <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          RNN Number
+                          RRN Number
                         </TableCell>
                         <TableCell style={{ backgroundColor: "#f5f5f5" }}>
                           {currentBooking.creditCardNumber}

@@ -85,6 +85,9 @@ export default function Sidenav() {
   const companyData = useAppStore(state=>state.companyData);
   const theme = useTheme();
   const [isSuperAdmin , setisSuperAdmin] = useState(false);
+  const [isAgent , setAgent] = useState(false);
+console.log("isAgent",isAgent);
+
   //const [open, setOpen] = React.useState(true);
   const navigate = useNavigate();
   
@@ -94,17 +97,21 @@ export default function Sidenav() {
   React.useEffect(()=>{roleCheck()},[])
 
   let role = '';
-  const roleCheck = async()=>{
-     const token =  sessionStorage.getItem('jwtToken');
-     if( token  && token !== '' && token !== null){
-         const decoded = jwtDecode(token);
-         role = decoded.role;
-         //console.log('sidenav' , role);
-        if(role == 'superadmin'){
-           setisSuperAdmin(true);
-        }
+  const roleCheck = async () => {
+    const token = sessionStorage.getItem('jwtToken');
+    if (token && token !== '' && token !== null) {
+      const decoded = jwtDecode(token);
+      role = decoded.role;
+      //console.log('sidenav', role);
+  
+      if (role === 'superadmin') {
+        setisSuperAdmin(true);
+      } else if (role === 'agent') {
+        setAgent(true);  // Set agent state when role is 'agent'
       }
     }
+  };
+  
    
    
 
@@ -216,6 +223,8 @@ export default function Sidenav() {
           </ListItem>
 
           
+          {!isAgent && (
+        <>
           <ListItem
             disablePadding
             sx={{ display: "block" }}
@@ -269,6 +278,9 @@ export default function Sidenav() {
               <ListItemText primary="Coupons" sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
           </ListItem>
+        </>
+      )}
+    
            
           { isSuperAdmin &&(<ListItem
             disablePadding

@@ -25,6 +25,7 @@ import ScannerPage from "./pages/ScannerPage";
 import BookingConfirmPage from "./pages/BookingConfirmPage";
 import Preloader from "./components/Preloader";
 import ReportPage from "./pages/ReportPage";
+// import AgentRole from "./components/AgentRole";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,9 @@ const App = () => {
     <Box sx={{ background: "#EEF1FF", minHeight: "100vh" }}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
+
+
+       
 
         <Route path="/" element={<Home />} />
 

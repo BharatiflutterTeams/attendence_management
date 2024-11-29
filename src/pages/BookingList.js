@@ -75,7 +75,10 @@ export default function BookingPage() {
   const [selectedChildrenPrice, setSelectedChildrenPrice] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedSubPackageIndex, setSelectedSubPackageIndex] = useState(0);
-  const [showWarning, setShowWarning] = useState(false);
+  // const [showWarning, setShowWarning] = useState(false);
+  const [showAdultWarning, setShowAdultWarning] = useState(false);
+  const [showChildrenWarning, setShowChildrenWarning] = useState(false);
+
   
   const [newBooking, setNewBooking] = useState({
     name: "",
@@ -306,17 +309,25 @@ export default function BookingPage() {
   };
 
   const handlePriceChange = (event) => {
-    setSelectedAdultPrice(event.target.value);
+    const newValue = event.target.value;
+      setSelectedAdultPrice(newValue);
+     // Show warning if the new value is less than the minimum required value
+     if (newValue && newValue < choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price) {
+      setShowAdultWarning(true);
+    } else {
+      setShowAdultWarning(false);
+    }
+    // setSelectedAdultPrice(event.target.value);
   };
   const handleChildrenPriceChange = (event) => {
-      const newValue = event.target.value;
-      setSelectedChildrenPrice(event.target.value);
+      const childNewValue = event.target.value;
+      setSelectedChildrenPrice(childNewValue);
      // Show warning if the new value is less than the minimum required value
-    //  if (newValue && newValue < choosePlan?.subpackages[selectedSubPackageIndex]?.child_price) {
-    //   setShowWarning(true);
-    // } else {
-    //   setShowWarning(false);
-    // }
+     if (childNewValue && childNewValue < choosePlan?.subpackages[selectedSubPackageIndex]?.child_price) {
+      setShowChildrenWarning(true);
+    } else {
+      setShowChildrenWarning(false);
+    }
   };
   const handleAdultCountChange = (value) => {
     setNewBooking((prev) => {
@@ -836,7 +847,7 @@ export default function BookingPage() {
                 }}
               />
 
-              <div>
+              {/* <div>
                 <Box className={styles.counterContainer}>
                   <Typography variant="h7" className={styles.counterLabel}>
                     Adults
@@ -845,12 +856,17 @@ export default function BookingPage() {
                 margin="dense"
                 label="Adult Price"
                 required
-                fullWidth
+                
                 variant="outlined"
                 name="adultprice"
                 value={selectedAdultPrice}
                 onChange={handlePriceChange}
               />
+              {showAdultWarning&& (
+                    <FormHelperText error>
+                      The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price}.
+                    </FormHelperText>
+                  )}
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                       className={styles.counterButton}
@@ -883,17 +899,17 @@ export default function BookingPage() {
                 margin="dense"
                 label="Children Price"
                 required
-                fullWidth
+               
                 variant="outlined"
                 name="childrenprice"
                 value={selectedChildrenPrice}
                 onChange={handleChildrenPriceChange}
               />
-                  {/* {showWarning && (
+                  {showChildrenWarning && (
                     <FormHelperText error>
                       The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.child_price}.
                     </FormHelperText>
-                  )} */}
+                  )}
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                       className={styles.counterButton}
@@ -918,7 +934,87 @@ export default function BookingPage() {
                     </Button>
                   </Box>
                 </Box>
-              </div>
+              </div> */}
+
+
+<div>
+  <Box className={styles.counterContainer}>
+    <Typography variant="h7" className={styles.counterLabel}>
+      Adults
+    </Typography>
+    <TextField
+      margin="dense"
+      label="Adult Price"
+      required
+      variant="outlined"
+      name="adultprice"
+      value={selectedAdultPrice}
+      onChange={handlePriceChange}
+      disabled={!choosePlan?.subpackages || choosePlan.subpackages.length === 0}  // Disable if no plan is selected
+    />
+    {showAdultWarning && (
+      <FormHelperText error>
+        The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price}.
+      </FormHelperText>
+    )}
+    <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Button
+        className={styles.counterButton}
+        onClick={() => handleAdultCountChange(Math.max(newBooking.adult - 1, 1))}
+      >
+        <RemoveIcon />
+      </Button>
+      <Typography variant="body1" className={styles.counterValue}>
+        {newBooking.adult || 0}
+      </Typography>
+      <Button
+        className={styles.counterButton}
+        onClick={() => handleAdultCountChange(newBooking.adult + 1)}
+      >
+        <AddIcon />
+      </Button>
+    </Box>
+  </Box>
+  
+  <Box className={styles.counterContainer}>
+    <Typography variant="h7" className={styles.counterLabel}>
+      Children
+    </Typography>
+    <TextField
+      margin="dense"
+      label="Children Price"
+      required
+      variant="outlined"
+      name="childrenprice"
+      value={selectedChildrenPrice}
+      onChange={handleChildrenPriceChange}
+      disabled={!choosePlan?.subpackages || choosePlan.subpackages.length === 0}  // Disable if no plan is selected
+    />
+    {showChildrenWarning && (
+      <FormHelperText error>
+        The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.child_price}.
+      </FormHelperText>
+    )}
+    <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Button
+        className={styles.counterButton}
+        onClick={() => handleChildCountChange(Math.max(newBooking.children - 1, 0))}
+      >
+        <RemoveIcon />
+      </Button>
+      <Typography variant="body1" className={styles.counterValue}>
+        {newBooking.children || 0}
+      </Typography>
+      <Button
+        className={styles.counterButton}
+        onClick={() => handleChildCountChange(newBooking.children + 1)}
+      >
+        <AddIcon />
+      </Button>
+    </Box>
+  </Box>
+</div>
+
 
               <Autocomplete
                 options={paymentOptions}
@@ -969,7 +1065,7 @@ export default function BookingPage() {
                 <TextField
                   margin="dense"
                   name="creditCardNumber"
-                  label="RNN Number"
+                  label="RRN Number"
                   type="text"
                   fullWidth
                   value={newBooking.creditCardNumber}

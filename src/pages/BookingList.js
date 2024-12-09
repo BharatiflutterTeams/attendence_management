@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Children } from "react";
 import {
   Box,
+  Tooltip,
   Button,
   Dialog,
   DialogActions,
@@ -32,7 +33,6 @@ import Navbar from "../components/Navbar";
 import AddIcon from "@mui/icons-material/Add";
 import Autocomplete from "@mui/material/Autocomplete";
 import { ToastContainer, toast } from "react-toastify";
-//import useAuth from "../Hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import useAppStore from "../appStore";
@@ -42,16 +42,17 @@ import ReactToPrint from "react-to-print";
 import PrintComponent from "../components/PrintComponent";
 import DownloadExcel from "../components/DownloadExcel";
 import styles from "./BookingList.module.css";
-
+import html2canvas from 'html2canvas';
 import ChildCareIcon from "@mui/icons-material/ChildCare";
+import HotelIcon from '@mui/icons-material/Hotel'; // Resort symbol
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-
+import { jsPDF } from "jspdf";
 const drawerWidth = 240;
-
 export default function BookingPage() {
   const Navigate = useNavigate();
   const companyData = useAppStore((state) => state.companyData);
   const setRowData = useAppStore((state) => state.setRowData);
+  console.log("setRowData",setRowData);
   const componentRef = useRef();
   const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] = useState("");
@@ -68,6 +69,7 @@ export default function BookingPage() {
   const [adminRole, setAdminrole] = useState();
   const [errors, setErrors] = useState({});
   const [currentBooking, setCurrentBooking] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [choosePlan, setChoosePlan] = useState({});
   const [totalAdultPrice, setTotalAdultPrice] = useState(0);
   const [totalChildPrice, setTotalChildPrice] = useState(0);
@@ -75,11 +77,8 @@ export default function BookingPage() {
   const [selectedChildrenPrice, setSelectedChildrenPrice] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedSubPackageIndex, setSelectedSubPackageIndex] = useState(0);
-  // const [showWarning, setShowWarning] = useState(false);
   const [showAdultWarning, setShowAdultWarning] = useState(false);
   const [showChildrenWarning, setShowChildrenWarning] = useState(false);
-
-  
   const [newBooking, setNewBooking] = useState({
     name: "",
     email: "",
@@ -100,61 +99,49 @@ export default function BookingPage() {
     creditCardNumber: "",
     bookingViaPerson: adminName,
     subpackageName: "",
+    remark:""
   });
-
-  // const [fromDate, setFromDate] = useState(new Date().toISOString().split("T")[0]);
-  // const [toDate, setToDate] = useState("");
-  const [selectedDate, setSelectedDate] = useState(
+ const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [plans, setPlans] = useState([]);
   const [bookingPlans , setBookingPlans] = useState([]);
-
+  const [showMaxLimitWarning, setShowMaxLimitWarning] = useState(false); 
+  const [isInputVisible, setIsInputVisible] = useState(false); 
+  const [adultInputValue, setAdultInputValue] = useState(newBooking.adult); 
+  const [isInputDisabled, setIsInputDisabled] = useState(false); 
+  const [showChildrenMaxLimitWarning, setShowChildrenMaxLimitWarning] = useState(false); 
+  const [isChildrenInputVisible, setIsChildrenInputVisible] = useState(false);  
+  const [childrenInputValue, setChildrenInputValue] = useState(newBooking.children); 
+  const [isChildrenInputDisabled, setIsChildrenInputDisabled] = useState(false); 
   const paymentOptions = [...companyData?.paymentMethods];
   const complementaryPersons =
     companyData?.complementaryPersons?.map((person) => person.name) || [];
-  //console.log("complementary",companyData.complementaryPersons )
-
   const today = new Date();
-
-  // Calculate the date 7 days ago
-  const sevenDaysAgo = new Date(today);
+ const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 7);
-
-  const calculateTotal = (adultCount, childCount) => {
+ const calculateTotal = (adultCount, childCount) => {
     let adultPrice = 0;
     let childPrice = 0;
-
-    if (choosePlan?.subpackages) {
+ if (choosePlan?.subpackages) {
       adultPrice =
         choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price < selectedAdultPrice ? selectedAdultPrice : choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price;
       childPrice =
         choosePlan?.subpackages[selectedSubPackageIndex]?.child_price < selectedChildrenPrice ? selectedChildrenPrice : choosePlan?.subpackages[selectedSubPackageIndex]?.child_price ;
     }
- 
-
     const totalAdultAmount = adultCount * adultPrice;
     const totalChildAmount = childCount * childPrice;
-
-    // Calculate the total amount before GST
     const totalBeforeGST = totalAdultAmount + totalChildAmount;
-
-    // Calculate the GST amount
     const gstAmount = totalBeforeGST * 0.18;
-
-    // Calculate the total amount including GST and round it off
     const totalAmountWithGST = Math.round(totalBeforeGST + gstAmount);
-
     // Round off individual amounts if needed
     const roundedTotalAdultAmount = Math.round(totalAdultAmount);
     const roundedTotalChildAmount = Math.round(totalChildAmount);
-
     setTotalAdultPrice(roundedTotalAdultAmount);
     setTotalChildPrice(roundedTotalChildAmount);
     setTotalAmount(totalAmountWithGST);
   };
-
-  useEffect(() => {
+ useEffect(() => {
     fetchBookings();
     fetchPlans();
     calculateTotal(newBooking.adult, newBooking.children);
@@ -163,7 +150,6 @@ export default function BookingPage() {
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
     const token = sessionStorage.getItem("jwtToken");
 
@@ -173,20 +159,15 @@ export default function BookingPage() {
       if (role == "checker") {
         Navigate("/scanner");
       }
-      //  if(role !== 'admin' || role !== 'superadmin'){
-      //      Navigate('/pagenotfound');
-      //  }
       const adminname = decoded.name;
       setAdminName(adminname);
       setAdminrole(role);
-      //console.log("adminName" , adminName);
     } else {
       console.log("Token not Found");
       Navigate("/login");
     }
   };
-
-  const fetchBookings = async () => {
+ const fetchBookings = async () => {
     const token = sessionStorage.getItem("jwtToken");
     if (!token) {
       Navigate("/login");
@@ -202,7 +183,8 @@ export default function BookingPage() {
         }
       );
       setBookings(response.data.bookings);
-      console.log("bookings", response.data.bookings);
+      // console.log("bookings", response.data);
+      // console.log("Total Booking == ", response.data.total)
       setRowCount(response.data.total);
       setLoading(false);
     } catch (error) {
@@ -211,8 +193,7 @@ export default function BookingPage() {
       alert("Error in loading bookings");
     }
   };
-
-  const fetchPlans = async () => {
+const fetchPlans = async () => {
     try {
       const response = await axios.get(`${endpoints.serverBaseURL}/api/plan`);
       let plans = response.data.plan;
@@ -232,14 +213,9 @@ export default function BookingPage() {
     return <Preloader />;
   }
   //************************************ */
-
-  // const handleDateChange = (event) => {
-  //   setSelectedDate(event.target.value);
-  // };
   const handleDateChange = (event) => {
     const inputDate = event.target.value;
-
-    // Check if the entered date is before today
+ // Check if the entered date is before today
     if (inputDate >= sevenDaysAgo.toISOString().split("T")[0]) {
       setSelectedDate(inputDate);
     } else {
@@ -250,31 +226,326 @@ export default function BookingPage() {
       });
     }
   };
-
   const handleOpen = () => {
     setOpen(true);
   };
-
   const handleClose = () => {
     setOpen(false);
   };
-
+  // const handleSave = async () => {
+  //   const finalBooking = {
+  //     ...newBooking,
+  //     bookingViaPerson: adminName,
+  //     adultPrice: totalAdultPrice,
+  //     childrenPrice: totalChildPrice,
+  //   };
+  
+  //   try {
+  //     const response = await axios.post(
+  //       `${endpoints.serverBaseURL}/api/admin/postbooking`,
+  //       finalBooking
+  //     );
+  //  const bookingId = response.data.booking._id;
+  // const qrResponse = await axios.post(
+  //       `${endpoints.serverBaseURL}/api/generateqr`,
+  //       { text: bookingId }
+  //     );
+  // const qrCodeURL = qrResponse.data.qrCodeURL;
+  //     console.log("QR Code URL: ", qrCodeURL);
+  
+  //     // Generate PDF using jsPDF
+  //     const doc = new jsPDF();
+  
+  //     doc.text("Booking Details", 10, 10);
+  //     doc.text(`Name: ${finalBooking.name}`, 10, 20);
+  //     doc.text(`Email: ${finalBooking.email}`, 10, 30);
+  //     doc.text(`Phone: ${finalBooking.phone}`, 10, 40);
+  //     doc.text(`Booking Date: ${finalBooking.bookingDate}`, 10, 50);
+  //     doc.text(`Adult Price: ${finalBooking.adultPrice}`, 10, 60);
+  //     doc.text(`Children Price: ${finalBooking.childrenPrice}`, 10, 70);
+  
+  //     const imgData = qrCodeURL;
+  //     doc.addImage(imgData, 'PNG', 10, 80, 50, 50);
+  
+  //   const contentHtml = `
+  //   <div id="ticket-container" style="width: 600px; margin: 0 auto; font-family: 'Arial', sans-serif; border: 1px solid #ddd; padding: 30px; background-color: #f0f9ff; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);">
+  //     <h1 style="text-align: center; color: #007BFF; margin-bottom: 20px; font-size: 30px; font-weight: bold;">Resort Booking Confirmation</h1>
+      
+  //     <!-- Guest Information Section -->
+  //     <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+  //       <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Guest Information</h3>
+  //       <p style="font-size: 20px; color: #555;"><strong>Name:</strong> ${finalBooking.name}</p>
+  //       <p style="font-size: 20px; color: #555;"><strong>Email:</strong> ${finalBooking.email}</p>
+  //       <p style="font-size: 20px; color: #555;"><strong>Phone:</strong> ${finalBooking.phone}</p>
+  //     </div>
+  
+  //     <!-- Booking Details Section -->
+  //     <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+  //       <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Booking Details</h3>
+  //       <p style="font-size: 20px; color: #555;"><strong>Booking Date:</strong> ${finalBooking.bookingDate}</p>
+  //       <p style="font-size: 20px; color: #555;"><strong>Adult Price:</strong> $${finalBooking.adultPrice}</p>
+  //       <p style="font-size: 20px; color: #555;"><strong>Children Price:</strong> $${finalBooking.childrenPrice}</p>
+  //     </div>
+  
+  //     <!-- QR Code Section -->
+  //     <div style="margin-bottom: 25px; text-align: center; background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+  //       <h3 style="font-size: 22px; color: #333; margin-bottom: 10px;">QR Code</h3>
+  //       <img src="data:image/png;base64,${qrCodeURL}" alt="QR Code" style="width: 250px; height: 250px; border: 2px solid #007BFF; border-radius: 10px; margin-top: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);" />
+  //     </div>
+  
+  //     <!-- Additional Information Section -->
+  //     <div style="text-align: center; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); margin-top: 20px;">
+  //       <p style="font-size: 18px; color: #777;">Thank you for choosing our resort! We look forward to hosting you.</p>
+  //       <p style="font-size: 18px; color: #888;">Booking ID: ${response.data.booking._id}</p>
+  //     </div>
+  
+  //     <!-- Footer -->
+  //     <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888;">
+  //       <p>© 2024 Bharti Resort . All rights reserved.</p>
+  //     </div>
+  //   </div>
+  // `;
+  //     const ticketContainer = document.createElement('div');
+  //     ticketContainer.innerHTML = contentHtml;
+  //     document.body.appendChild(ticketContainer);
+  
+  //     // Use html2canvas to capture the HTML and convert it to an image
+  //     const canvas = await html2canvas(ticketContainer, { scale: 2 });
+  //     const imageBlob = await new Promise((resolve) =>
+  //       canvas.toBlob((blob) => resolve(blob), "image/png")
+  //     );
+  
+  //     // Clean up
+  //     document.body.removeChild(ticketContainer);
+  
+  //     const imageUrl = URL.createObjectURL(imageBlob);
+  //     const link = document.createElement('a');
+  //     link.href = imageUrl;
+  //     link.download = 'booking-details.png';
+  //     link.click();
+  
+  //     // Create FormData to send the image to the server
+  //     const formData = new FormData();
+  //     formData.append("image", imageBlob, "ticket.png");
+  //     formData.append("qrCode", qrCodeURL);
+  
+  //     console.log("qrCodeURL", qrCodeURL);
+  
+  //     // Add optional extra fields (phone, planId, etc.)
+  //     if (newBooking.phone || newBooking.planId || newBooking.selectedSubPackage) {
+  //       formData.append("phone", newBooking.phone);
+  //       formData.append("Plan", newBooking.planId || "Default Plan");
+  //       formData.append("subpackage", newBooking.selectedSubPackage?.name || "Default SubPackage");
+  //       formData.append("Total amount", finalBooking.totalAmount || 'N/A');
+  //       formData.append("Date", new Date(finalBooking.bookingDate).toLocaleDateString());
+  //       formData.append("Booking ID", response.data.booking._id || 'No ID');
+  //     } else {
+  //       console.error("Phone number is not available");
+  //     }
+  
+  //     // Send the formData (image and additional data) to the server
+  //     const serverResponse = await axios.post(
+  //       `${endpoints.serverBaseURL}/api/receive-image`,
+  //       formData,
+  //       {
+  //         headers: { "Content-Type": "multipart/form-data" },
+  //       }
+  //     );
+  
+  //     console.log("Response from server:", serverResponse);
+  
+  //     if (serverResponse.status === 200) {
+  //       toast.success("Booking done successfully");
+  //     } else {
+  //       console.error("Error sending image and QR code:", serverResponse);
+  //     }
+  
+  //     // Optionally fetch bookings and update state
+  //     fetchBookings();
+  //     setRowCount(bookings.length + 1);
+  
+  //     // Reset new booking state
+  //     setNewBooking({
+  //       name: "",
+  //       email: "",
+  //       phone: "",
+  //       planId: "",
+  //       selectedSubPackage: {},
+  //       gstNumber: "",
+  //       address: "",
+  //       bookingDate: new Date().toISOString().split("T")[0],
+  //       adult: 1,
+  //       children: 0,
+  //       paymentMethod: "",
+  //       referenceId: "",
+  //       complementaryPerson: "",
+  //       adultPrice: "",
+  //       childrenPrice: "",
+  //       upiId: "",
+  //       creditCardNumber: "",
+  //       bookingViaPerson: adminName,
+  //       subpackageName: "",
+  //       remark:""
+  //     });
+  
+  //     // Close modal or booking form
+  //     handleClose();
+  //     return new Promise((resolve) => setTimeout(resolve, 2000));
+  //     // Show success toast
+      
+  
+  //   } catch (error) {
+  //     console.error("Error saving booking:", error);
+  //   }
+  // };
+  
+  
   const handleSave = async () => {
+    // Assuming GST is 18% (adjust as needed)
+    const gstRate = 0.18;
+    
+    // Calculate GST
+    const gstAmount = (totalAdultPrice + totalChildPrice) * gstRate;
+  
+    // Calculate total amount (adult + children price + GST)
+    const totalAmount = totalAdultPrice + totalChildPrice + gstAmount;
+  
     const finalBooking = {
       ...newBooking,
       bookingViaPerson: adminName,
       adultPrice: totalAdultPrice,
       childrenPrice: totalChildPrice,
+      totalAmount: totalAmount, // Add totalAmount here
+      gstAmount: gstAmount, // Optionally store GST amount
     };
-    console.log("finalBooking", finalBooking);
+  
     try {
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/admin/postbooking`,
         finalBooking
       );
-      //setBookings([...bookings, response.data]);
+      const bookingId = response.data.booking._id;
+      const qrResponse = await axios.post(
+        `${endpoints.serverBaseURL}/api/generateqr`,
+        { text: bookingId }
+      );
+      const qrCodeURL = qrResponse.data.qrCodeURL;
+      console.log("QR Code URL: ", qrCodeURL);
+  
+      // Generate PDF using jsPDF
+      const doc = new jsPDF();
+  
+      doc.text("Booking Details", 10, 10);
+      doc.text(`Name: ${finalBooking.name}`, 10, 20);
+      doc.text(`Email: ${finalBooking.email}`, 10, 30);
+      doc.text(`Phone: ${finalBooking.phone}`, 10, 40);
+      doc.text(`Booking Date: ${finalBooking.bookingDate}`, 10, 50);
+      doc.text(`Adult Price: ${finalBooking.adultPrice}`, 10, 60);
+      doc.text(`Children Price: ${finalBooking.childrenPrice}`, 10, 70);
+      doc.text(`GST Amount: ${finalBooking.gstAmount.toFixed(2)}`, 10, 80); // Display GST
+      doc.text(`Total Amount: ${finalBooking.totalAmount.toFixed(2)}`, 10, 90); // Display total amount
+  
+      const imgData = qrCodeURL;
+      doc.addImage(imgData, 'PNG', 10, 100, 50, 50);
+  
+      const contentHtml = `
+        <div id="ticket-container" style="width: 600px; margin: 0 auto; font-family: 'Arial', sans-serif; border: 1px solid #ddd; padding: 30px; background-color: #f0f9ff; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);">
+          <h1 style="text-align: center; color: #007BFF; margin-bottom: 20px; font-size: 30px; font-weight: bold;">Resort Booking Confirmation</h1>
+          
+          <!-- Guest Information Section -->
+          <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Guest Information</h3>
+            <p style="font-size: 20px; color: #555;"><strong>Name:</strong> ${finalBooking.name}</p>
+            <p style="font-size: 20px; color: #555;"><strong>Email:</strong> ${finalBooking.email}</p>
+            <p style="font-size: 20px; color: #555;"><strong>Phone:</strong> ${finalBooking.phone}</p>
+          </div>
+  
+          <!-- Booking Details Section -->
+          <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Booking Details</h3>
+            <p style="font-size: 20px; color: #555;"><strong>Booking Date:</strong> ${finalBooking.bookingDate}</p>
+            <p style="font-size: 20px; color: #555;"><strong>Adult Price:</strong> $${finalBooking.adultPrice}</p>
+            <p style="font-size: 20px; color: #555;"><strong>Children Price:</strong> $${finalBooking.childrenPrice}</p>
+            <p style="font-size: 20px; color: #555;"><strong>GST Amount:</strong> $${finalBooking.gstAmount.toFixed(2)}</p>
+            <p style="font-size: 20px; color: #555;"><strong>Total Amount:</strong> $${finalBooking.totalAmount.toFixed(2)}</p>
+          </div>
+  
+          <!-- QR Code Section -->
+          <div style="margin-bottom: 25px; text-align: center; background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
+            <h3 style="font-size: 22px; color: #333; margin-bottom: 10px;">QR Code</h3>
+            <img src="data:image/png;base64,${qrCodeURL}" alt="QR Code" style="width: 250px; height: 250px; border: 2px solid #007BFF; border-radius: 10px; margin-top: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);" />
+          </div>
+  
+          <!-- Additional Information Section -->
+          <div style="text-align: center; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); margin-top: 20px;">
+            <p style="font-size: 18px; color: #777;">Thank you for choosing our resort! We look forward to hosting you.</p>
+            <p style="font-size: 18px; color: #888;">Booking ID: ${response.data.booking._id}</p>
+          </div>
+  
+          <!-- Footer -->
+          <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888;">
+            <p>© 2024 Bharti Resort . All rights reserved.</p>
+          </div>
+        </div>
+      `;
+      const ticketContainer = document.createElement('div');
+      ticketContainer.innerHTML = contentHtml;
+      document.body.appendChild(ticketContainer);
+  
+      // Use html2canvas to capture the HTML and convert it to an image
+      const canvas = await html2canvas(ticketContainer, { scale: 2 });
+      const imageBlob = await new Promise((resolve) =>
+        canvas.toBlob((blob) => resolve(blob), "image/png")
+      );
+  
+      // Clean up
+      document.body.removeChild(ticketContainer);
+  
+      const imageUrl = URL.createObjectURL(imageBlob);
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = 'booking-details.png';
+      link.click();
+  
+      // Create FormData to send the image to the server
+      const formData = new FormData();
+      formData.append("image", imageBlob, "ticket.png");
+      formData.append("qrCode", qrCodeURL);
+  
+      // Add optional extra fields (phone, planId, etc.)
+      if (newBooking.phone || newBooking.planId || newBooking.selectedSubPackage) {
+        formData.append("phone", newBooking.phone);
+        formData.append("Plan", newBooking.planId || "Default Plan");
+        formData.append("subpackage", newBooking.selectedSubPackage?.name || "Default SubPackage");
+        formData.append("Total amount", finalBooking.totalAmount || 'N/A');
+        formData.append("Date", new Date(finalBooking.bookingDate).toLocaleDateString());
+        formData.append("Booking ID", response.data.booking._id || 'No ID');
+      } else {
+        console.error("Phone number is not available");
+      }
+  
+      // Send the formData (image and additional data) to the server
+      const serverResponse = await axios.post(
+        `${endpoints.serverBaseURL}/api/receive-image`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+  
+      console.log("Response from server:", serverResponse);
+  
+      if (serverResponse.status === 200) {
+        toast.success("Booking done successfully");
+      } else {
+        console.error("Error sending image and QR code:", serverResponse);
+      }
+  
+      // Optionally fetch bookings and update state
       fetchBookings();
       setRowCount(bookings.length + 1);
+  
+      // Reset new booking state
       setNewBooking({
         name: "",
         email: "",
@@ -295,13 +566,44 @@ export default function BookingPage() {
         creditCardNumber: "",
         bookingViaPerson: adminName,
         subpackageName: "",
+        remark: ""
       });
+  
+      // Close modal or booking form
       handleClose();
-      toast.success("Booking done Successfully");
+      return new Promise((resolve) => setTimeout(resolve, 2000));
+  
     } catch (error) {
       console.error("Error saving booking:", error);
     }
   };
+
+
+  const sendImageToBackend = async (imageData) => {
+    try {
+      const response = await axios.post(
+        `${endpoints.serverBaseURL}/api/receive-image`,
+        {
+          image: imageData,
+          phone: newBooking.phone,
+          Plan: newBooking.planId?.title,
+          subpackage: newBooking.selectedSubPackage?.name,
+          Date: newBooking.bookingDate,
+          'Total amount': totalAdultPrice + totalChildPrice,
+          'Booking ID': newBooking.bookingId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log("Image sent successfully", response);
+    } catch (error) {
+      console.error("Error sending image:", error);
+    }
+  };
+  
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -329,26 +631,157 @@ export default function BookingPage() {
       setShowChildrenWarning(false);
     }
   };
-  const handleAdultCountChange = (value) => {
+// ---------------------------------------------------------------------------------
+const handleAdultCountChange = (value) => {
+  // Allow the adult value to go up to a maximum of 50, and not below 1
+  if (value > 50) value = 50;
+  if (value < 1) value = 1; // Ensure the value doesn't go below 1
+
+  setNewBooking((prev) => {
+    const updatedBooking = { ...prev, adult: value };
+    calculateTotal(updatedBooking.adult, updatedBooking.children);
+    return updatedBooking;
+  });
+};
+
+const handleInputChange = (event) => {
+  setAdultInputValue(event.target.value);
+};
+
+const handleInputBlur = () => {
+  // Hide the input when user clicks outside or loses focus
+  handleAdultInputSubmit(); // Call submit logic when blur happens
+};
+
+const handlePlusClick = () => {
+  // Show input box for custom value when plus icon is clicked
+  setIsInputVisible(true);
+  setIsInputDisabled(false); // Enable the input if it's not disabled
+};
+
+const handleMinusClick = () => {
+  // Decrement adult count but ensure it doesn't go below 1
+  if (newBooking.adult > 1) {
     setNewBooking((prev) => {
-      const updatedBooking = { ...prev, adult: value };
+      const updatedBooking = { ...prev, adult: prev.adult - 1 };
       calculateTotal(updatedBooking.adult, updatedBooking.children);
       return updatedBooking;
     });
-  };
+    setShowMaxLimitWarning(false); // Hide warning when user decreases count
+  }
+};
+
+const handleAdultInputSubmit = () => {
+  const value = parseInt(adultInputValue, 10);
+
+  if (value > 50) {
+    // Show warning if value is greater than 50
+    toast.warning("You can add a maximum of 50 adults only.");
+    // Keep the input box open
+    setIsInputVisible(true); 
+    setIsInputDisabled(false); // Keep input enabled if warning is shown
+  } else if (value >= 1 && value <= 50) {
+    // If value is valid, update the count and close the input box
+    handleAdultCountChange(value);
+    setIsInputVisible(false); // Close the input box after submission
+    setIsInputDisabled(true); // Disable the input after submission
+    setShowMaxLimitWarning(false); // Hide warning when valid value is entered
+  } else {
+    // Handle case when the value is less than 1
+    toast.warning("Adult count must be at least 1.");
+  }
+};
+
+
+
+// for Children
+
+// const handleChildrenPriceChange = (event) => {
+//   const newValue = event.target.value;
+//   setSelectedChildrenPrice(newValue);
+
+//   if (newValue && newValue < choosePlan?.subpackages[selectedSubPackageIndex]?.child_price) {
+//     setShowChildrenWarning(true);
+//   } else {
+//     setShowChildrenWarning(false);
+//   }
+// };
+const handleChildCountChange = (value) => {
+  if (value > 50) {
+    value = 50;
+    toast.warning("You cannot add more than 50 children!");  // Show toast warning if limit is exceeded
+  }
+  if (value < 0) value = 0;  // Ensure value doesn't go below 0
+
+  setNewBooking((prev) => {
+    const updatedBooking = { ...prev, children: value };
+    calculateTotal(updatedBooking.adult, updatedBooking.children);
+    return updatedBooking;
+  });
+};
+
+const handleChildrenInputChange = (event) => {
+  setChildrenInputValue(event.target.value);
+};
+
+const handleChildrenInputBlur = () => {
+  handleChildrenInputSubmit();  // Call submit logic when blur happens
+};
+
+const handleChildrenPlusClick = () => {
+  // Show input box for custom value when plus icon is clicked
+  setIsChildrenInputVisible(true);
+  setIsChildrenInputDisabled(false);  // Enable the input if it's not disabled
+};
+
+const handleChildrenMinusClick = () => {
+  if (newBooking.children > 0) {
+    setNewBooking((prev) => {
+      const updatedBooking = { ...prev, children: prev.children - 1 };
+      calculateTotal(updatedBooking.adult, updatedBooking.children);
+      return updatedBooking;
+    });
+  }
+};
+
+const handleChildrenInputSubmit = () => {
+  const value = parseInt(childrenInputValue, 10);
+
+  if (value > 50) {
+    // Show warning if value is greater than 50
+    toast.warning("You cannot add more than 50 children!");  
+    setIsChildrenInputVisible(true);  // Keep input box open
+    setIsChildrenInputDisabled(false);  // Keep input enabled if warning is shown
+  } else if (value >= 0 && value <= 50) {
+    // If value is valid, update the count and close the input box
+    handleChildCountChange(value);
+    setIsChildrenInputVisible(false);  // Close the input box after valid submission
+    setIsChildrenInputDisabled(true);  // Disable the input after valid submission
+  } else {
+    // Handle case when the value is less than 0
+    toast.warning("Children count must be at least 0.");
+  }
+};
+
+// -------------------------------------------------------------
+
+
+
+
+
 
   const handlePlanChange = (event, newValue) => {
     setNewBooking({ ...newBooking, planId: newValue?._id || "" });
     setChoosePlan(newValue);
   };
 
-  const handleChildCountChange = (value) => {
-    setNewBooking((prev) => {
-      const updatedBooking = { ...prev, children: value };
-      calculateTotal(updatedBooking.adult, updatedBooking.children);
-      return updatedBooking;
-    });
-  };
+  // const handleChildCountChange = (value) => {
+  //   setNewBooking((prev) => {
+  //     const updatedBooking = { ...prev, children: value };
+  //     calculateTotal(updatedBooking.adult, updatedBooking.children);
+  //     return updatedBooking;
+  //   });
+  // };
 
   const handleSubPackageChange = (event, newValue) => {
     if (newValue) {
@@ -490,12 +923,7 @@ export default function BookingPage() {
       width: 250,
       valueGetter: (params) => params || "Unknown",
     },
-    {
-      field:"franchiseCode",
-      headerName : "Ref Code",
-      width : 150,
-      valueGetter : (params) => params,
-    },
+   
     { field: "adult", headerName: "Adult", width: 100 },
     { field: "children", headerName: "Children", width: 100 },
     {
@@ -522,6 +950,7 @@ export default function BookingPage() {
           <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
             <MoreVertIcon />
           </IconButton>
+
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -531,8 +960,6 @@ export default function BookingPage() {
             <MenuItem onClick={() => handlePrintOpen(currentBooking)}>
               Print Details
             </MenuItem>
-            {/* <MenuItem onClick={handleEditOpen}>Edit</MenuItem>
-            <MenuItem onClick={handleDeleteOpen}>Delete</MenuItem> */}
           </Menu>
           {/* Hidden print button for triggering print */}
           <ReactToPrint
@@ -551,8 +978,13 @@ export default function BookingPage() {
         </>
       ),
     },
+    {
+      field:"franchiseCode",
+      headerName : "Ref Code",
+      width : 150,
+      valueGetter : (params) => params,
+    },
   ];
-  // const today = new Date().toDateString().split("T")[0];
 
   //form validation ************************************//
 
@@ -592,12 +1024,21 @@ export default function BookingPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveClick = () => {
+  // ------------------------------------------------------------
+ const handleSaveClick = () => {
     if (validate()) {
-      handleSave();
+      setIsSaving(true); // Disable button
+      handleSave()
+        .then(() => {
+          // After saving completes, re-enable the button if needed
+          setIsSaving(false);
+        })
+        .catch((error) => {
+          console.error("Error saving:", error);
+          setIsSaving(false); // Re-enable button on error
+        });
     }
   };
-
   
 
   //****************************************************** */
@@ -607,9 +1048,6 @@ export default function BookingPage() {
     : bookings;
   const finalBookings = filteredBookings.map((booking)=> ( {...booking, 
                                         subpackage:booking?.selectedSubPackage?.name}))
-   //console.log("finalBookings", finalBookings)
-  //console.log("filteredBookings ", filteredBookings);
-  //console.log("selectedPlan", selectedPlan);
 
   return (
     <>
@@ -685,6 +1123,56 @@ export default function BookingPage() {
               >
                 Add Booking
               </Button>
+
+
+              {/* --------------------------------------------------------------------------------------- */}
+              
+
+<Box
+  sx={{
+    display: "flex",
+    justifyContent: "center",  
+    alignItems: "center",  
+    padding: "10px 20px",  
+    background: "#ffffff",
+    color: "#867AE9",
+    borderRadius: "8px",
+    fontWeight: "bold",
+    fontSize: "14px",
+    cursor: "pointer",  
+    transition: "all 0.3s ease",  
+    width: "200px", 
+    height: "38px", 
+    textAlign: "center",  
+    lineHeight: "50px", 
+    boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.2)",  
+    '&:hover': {
+      boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.3)",  
+      transform: "translateY(-2px)", 
+    },
+    '&:active': {
+      boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)",  
+      transform: "translateY(0px)",  
+    }
+  }}
+>
+  {/* Tooltip will show on hover */}
+  <Tooltip
+    title={`Adult : ${finalBookings.reduce((total, booking) => total + (booking.adult || 0), 0)}\nChildren : ${finalBookings.reduce((total, booking) => total + (booking.children || 0), 0)}`}
+    arrow
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      {/* Resort Symbol */}
+      <HotelIcon sx={{ fontSize: "20px", color: "#867AE9" }} />
+      {/* Show total bookings, including both adults and children */}
+      Total Bookings: {finalBookings.reduce((total, booking) => total + (booking.adult || 0) + (booking.children || 0), 0)}
+    </Box>
+  </Tooltip>
+</Box>
+
+
+
+              {/* ---------------------------------------------------------------------------------------------- */}
             </CardContent>
           </Box>
 
@@ -847,98 +1335,10 @@ export default function BookingPage() {
                 }}
               />
 
-              {/* <div>
-                <Box className={styles.counterContainer}>
-                  <Typography variant="h7" className={styles.counterLabel}>
-                    Adults
-                  </Typography>
-                  <TextField
-                margin="dense"
-                label="Adult Price"
-                required
-                
-                variant="outlined"
-                name="adultprice"
-                value={selectedAdultPrice}
-                onChange={handlePriceChange}
-              />
-              {showAdultWarning&& (
-                    <FormHelperText error>
-                      The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price}.
-                    </FormHelperText>
-                  )}
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Button
-                      className={styles.counterButton}
-                      onClick={() =>
-                        handleAdultCountChange(
-                          Math.max(newBooking.adult - 1, 1)
-                        )
-                      }
-                    >
-                      <RemoveIcon />
-                    </Button>
-                    <Typography variant="body1" className={styles.counterValue}>
-                      {newBooking.adult || 0}
-                    </Typography>
-                    <Button
-                      className={styles.counterButton}
-                      onClick={() =>
-                        handleAdultCountChange(newBooking.adult + 1)
-                      }
-                    >
-                      <AddIcon />
-                    </Button>
-                  </Box>
-                </Box>
-                <Box className={styles.counterContainer}>
-                  <Typography variant="h7" className={styles.counterLabel}>
-                    Children
-                  </Typography>
-                  <TextField
-                margin="dense"
-                label="Children Price"
-                required
-               
-                variant="outlined"
-                name="childrenprice"
-                value={selectedChildrenPrice}
-                onChange={handleChildrenPriceChange}
-              />
-                  {showChildrenWarning && (
-                    <FormHelperText error>
-                      The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.child_price}.
-                    </FormHelperText>
-                  )}
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Button
-                      className={styles.counterButton}
-                      onClick={() =>
-                        handleChildCountChange(
-                          Math.max(newBooking.children - 1, 0)
-                        )
-                      }
-                    >
-                      <RemoveIcon />
-                    </Button>
-                    <Typography variant="body1" className={styles.counterValue}>
-                      {newBooking.children || 0}
-                    </Typography>
-                    <Button
-                      className={styles.counterButton}
-                      onClick={() =>
-                        handleChildCountChange(newBooking.children + 1)
-                      }
-                    >
-                      <AddIcon />
-                    </Button>
-                  </Box>
-                </Box>
-              </div> */}
 
 
 <div>
-  <Box className={styles.counterContainer}>
+  {/* <Box className={styles.counterContainer}>
     <Typography variant="h7" className={styles.counterLabel}>
       Adults
     </Typography>
@@ -974,9 +1374,87 @@ export default function BookingPage() {
         <AddIcon />
       </Button>
     </Box>
-  </Box>
+  </Box> */}
+
+
+<Box className={styles.counterContainer}>
+      <Typography variant="h7" className={styles.counterLabel}>
+        Adults
+      </Typography>
+      <TextField
+        margin="dense"
+        label="Adult Price"
+        required
+        variant="outlined"
+        name="adultprice"
+        value={selectedAdultPrice}
+        onChange={handlePriceChange}
+        disabled={!choosePlan?.subpackages || choosePlan.subpackages.length === 0}
+      />
+      {showAdultWarning && (
+        <FormHelperText error>
+          The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.adult_price}.
+        </FormHelperText>
+      )}
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Button
+          className={styles.counterButton}
+          onClick={handleMinusClick}
+        >
+          <RemoveIcon />
+        </Button>
+
+        <Typography variant="body1" className={styles.counterValue}>
+          {newBooking.adult || 0}
+        </Typography>
+
+        <Button
+          className={styles.counterButton}
+          onClick={handlePlusClick}
+        >
+          <AddIcon />
+        </Button>
+      </Box>
+
+      {/* If input box is visible, show the custom input for adult count */}
+      {isInputVisible && (
+        <Box sx={{ marginTop: 2 }}>
+          <TextField
+            type="number"
+            label="Enter Adult Count"
+            value={adultInputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            inputProps={{ min: 1, max: 50 }} // Ensure only valid numbers can be entered
+            fullWidth
+            disabled={isInputDisabled} // Disable input after submission
+          />
+          <Button
+            onClick={handleAdultInputSubmit}
+            sx={{ marginTop: 1 }}
+            disabled={isInputDisabled} // Disable submit button after submission
+          >
+            Submit
+          </Button>
+        </Box>
+      )}
+
+      {/* Display max limit warning */}
+      {showMaxLimitWarning && (
+        <FormHelperText error>
+          You cannot add more than 50 adults.
+        </FormHelperText>
+      )}
+    </Box>
   
-  <Box className={styles.counterContainer}>
+  
+
+
+
+
+
+  
+  {/* <Box className={styles.counterContainer}>
     <Typography variant="h7" className={styles.counterLabel}>
       Children
     </Typography>
@@ -1012,11 +1490,84 @@ export default function BookingPage() {
         <AddIcon />
       </Button>
     </Box>
-  </Box>
+  </Box> */}
+
+
+
+
+
+
+<Box className={styles.counterContainer}>
+      <Typography variant="h7" className={styles.counterLabel}>
+        Children
+      </Typography>
+      <TextField
+        margin="dense"
+        label="Children Price"
+        required
+        variant="outlined"
+        name="childrenprice"
+        value={selectedChildrenPrice}
+        onChange={handleChildrenPriceChange}
+        disabled={!choosePlan?.subpackages || choosePlan.subpackages.length === 0}
+      />
+      {showChildrenWarning && (
+        <FormHelperText error>
+          The price should be greater than {choosePlan?.subpackages[selectedSubPackageIndex]?.child_price}.
+        </FormHelperText>
+      )}
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Button
+          className={styles.counterButton}
+          onClick={handleChildrenMinusClick}
+        >
+          <RemoveIcon />
+        </Button>
+
+        <Typography variant="body1" className={styles.counterValue}>
+          {newBooking.children || 0}
+        </Typography>
+
+        <Button
+          className={styles.counterButton}
+          onClick={handleChildrenPlusClick}
+        >
+          <AddIcon />
+        </Button>
+      </Box>
+
+      {/* If input box is visible, show the custom input for children count */}
+      {isChildrenInputVisible && (
+        <Box sx={{ marginTop: 2 }}>
+          <TextField
+            type="number"
+            label="Enter Children Count"
+            value={childrenInputValue}
+            onChange={handleChildrenInputChange}
+            onBlur={handleChildrenInputBlur}
+            inputProps={{ min: 0, max: 50 }} // Ensure only valid numbers can be entered
+            fullWidth
+            disabled={isChildrenInputDisabled} // Disable input after submission
+          />
+          <Button
+            onClick={handleChildrenInputSubmit}
+            sx={{ marginTop: 1 }}
+            disabled={isChildrenInputDisabled} // Disable submit button after submission
+          >
+            Submit
+          </Button>
+        </Box>
+      )}
+
+      {/* Display max limit warning */}
+      {showChildrenMaxLimitWarning && (
+        <FormHelperText error>
+          You cannot add more than 50 children.
+        </FormHelperText>
+      )}
+    </Box>
 </div>
-
-
-              <Autocomplete
+<Autocomplete
                 options={paymentOptions}
                 getOptionLabel={(option) => option}
                 fullWidth
@@ -1094,6 +1645,17 @@ export default function BookingPage() {
                   )}
                 />
               )}
+               <TextField
+                margin="dense"
+                label="Remarks"
+                fullWidth
+                variant="outlined"
+                name="remark"
+                value={newBooking.remark}
+                onChange={handleChange}
+                error={!!errors.remark}
+                helperText={errors.remark}
+              />
             </DialogContent>
 
             <DialogActions>
@@ -1104,12 +1666,21 @@ export default function BookingPage() {
               >
                 Cancel
               </Button>
-              <Button
+              {/* <Button
                 onClick={handleSaveClick}
                 variant="contained"
                 style={{ background: "#867AE9", textTransform: "none" }}
               >
                 Save
+              </Button> */}
+
+          <Button
+                    onClick={handleSaveClick}
+                    variant="contained"
+                    style={{ background: isSaving ? "#ccc" : "#867AE9", textTransform: "none" }}
+                    disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Save"}
               </Button>
             </DialogActions>
           </Dialog>
@@ -1538,6 +2109,7 @@ export default function BookingPage() {
               sx={{ background: "#ffffff" }}
               //getRowId={(row) => row._id}
             />
+
           </Box>
         </Box>
       </Box>

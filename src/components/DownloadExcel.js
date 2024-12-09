@@ -32,6 +32,7 @@ const DownloadExcel = ({ bookings }) => {
       bookingId: booking?._id,
       userId: booking?.userId?._id,
       PaymentId: booking?.paymentId,
+      Remarks : booking?.remark,
       bookingViaPerson: booking?.bookingViaPerson,
       paymentMethod: booking?.paymentMethod,
       UPI_ID: booking?.upiId,

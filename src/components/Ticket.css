@@ -1,0 +1,137 @@
+.container {
+    max-width: 600px; /* Reduced max-width for smaller grid size */
+    margin: 20px auto;
+    padding: 20px; /* Reduced padding for a tighter layout */
+    border-radius: 12px;
+    background-color: #f9f9f9;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  .qr-code-center-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    margin-top: 10px; /* Adjust spacing as needed */
+  }
+  
+  .qr-code-large {
+    width: 150px; /* Adjust size as needed */
+    height: 150px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2ecc71;
+    color: #fff;
+    padding: 15px;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .resort-logo {
+    height: 50px; /* Adjusted size for a more compact look */
+  }
+  
+  .resort-name {
+    font-size: 1.5em; /* Reduced font size for better fit */
+    text-align: center;
+    flex-grow: 1;
+    margin: 0 10px;
+  }
+  
+  .qr-code-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .qr-code-image {
+    width: 70px; /* Reduced size for better fit */
+    height: 70px;
+  }
+  
+  .user-info-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted min-width */
+    gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .user-info-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .bold-text {
+    font-weight: bold;
+  }
+  
+  /* Ensure proper spacing and alignment */
+  .user-info-item {
+    padding: 5px 0;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    .user-info-row {
+      grid-template-columns: 1fr; /* Single column on mobile */
+    }
+  }
+  
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background-color: #e9ecef;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 15px;
+  }
+  
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .activity-row {
+    margin-top: 20px;
+  }
+  
+  .activity-title {
+    font-size: 1.2em; /* Reduced font size */
+    margin-bottom: 10px;
+  }
+  
+  .activity-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  
+  .activity-chip-styled {
+    margin: 4px 0;
+    padding: 6px 12px; /* Adjusted padding for better fit */
+    background-color: #e0e0e0;
+    font-size: 0.9em; /* Reduced font size for a more compact look */
+  }
+  
+  .download-button-container {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .download-button {
+    background-color: #2ecc71;
+    color: white;
+    padding: 8px 16px; /* Adjusted padding */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .download-button:hover {
+    background-color: #2ecc71;
+  }
+  

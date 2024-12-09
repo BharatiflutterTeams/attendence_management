@@ -25,6 +25,8 @@ import ScannerPage from "./pages/ScannerPage";
 import BookingConfirmPage from "./pages/BookingConfirmPage";
 import Preloader from "./components/Preloader";
 import ReportPage from "./pages/ReportPage";
+import Ticket from "./components/Ticket";
+
 // import AgentRole from "./components/AgentRole";
 
 const App = () => {
@@ -72,6 +74,7 @@ const App = () => {
         <Route path="/scanner" element={<ScannerPage />} />
         <Route path="/bookingconfirm" element={<BookingConfirmPage />} />
         <Route path="/addadminchecker" element={<AddUserPage />} />
+        <Route path="/ticket" element={<Ticket />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

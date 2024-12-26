@@ -68,8 +68,9 @@ export default function CustomizedList() {
             
             <Divider />
                    
-            <ListItemButton><Link to='/' style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></ListItemButton>
+            {/* <ListItemButton><Link to='/' style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></ListItemButton> */}
              <ListItemButton><Link to='/bookings' style={{ color: 'white', textDecoration: 'none' }}>booking</Link></ListItemButton>
+             <ListItemButton><Link to='/attendence' style={{ color: 'white', textDecoration: 'none' }}>Attendence</Link></ListItemButton>
             <ListItemButton><Link to='/plans' style={{ color: 'white', textDecoration: 'none' }}>Plans</Link></ListItemButton>
             <ListItemButton><Link to='/coupons' style={{ color: 'white', textDecoration: 'none' }}>Coupons</Link></ListItemButton>
           </FireNav>

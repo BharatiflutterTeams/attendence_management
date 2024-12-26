@@ -52,7 +52,7 @@ export default function BookingPage() {
   const Navigate = useNavigate();
   const companyData = useAppStore((state) => state.companyData);
   const setRowData = useAppStore((state) => state.setRowData);
-  console.log("setRowData",setRowData);
+ 
   const componentRef = useRef();
   const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] = useState("");
@@ -69,6 +69,7 @@ export default function BookingPage() {
   const [adminRole, setAdminrole] = useState();
   const [errors, setErrors] = useState({});
   const [currentBooking, setCurrentBooking] = useState(null);
+  console.log("Current Booking-------",currentBooking)
   const [isSaving, setIsSaving] = useState(false);
   const [choosePlan, setChoosePlan] = useState({});
   const [totalAdultPrice, setTotalAdultPrice] = useState(0);
@@ -232,173 +233,6 @@ const fetchPlans = async () => {
   const handleClose = () => {
     setOpen(false);
   };
-  // const handleSave = async () => {
-  //   const finalBooking = {
-  //     ...newBooking,
-  //     bookingViaPerson: adminName,
-  //     adultPrice: totalAdultPrice,
-  //     childrenPrice: totalChildPrice,
-  //   };
-  
-  //   try {
-  //     const response = await axios.post(
-  //       `${endpoints.serverBaseURL}/api/admin/postbooking`,
-  //       finalBooking
-  //     );
-  //  const bookingId = response.data.booking._id;
-  // const qrResponse = await axios.post(
-  //       `${endpoints.serverBaseURL}/api/generateqr`,
-  //       { text: bookingId }
-  //     );
-  // const qrCodeURL = qrResponse.data.qrCodeURL;
-  //     console.log("QR Code URL: ", qrCodeURL);
-  
-  //     // Generate PDF using jsPDF
-  //     const doc = new jsPDF();
-  
-  //     doc.text("Booking Details", 10, 10);
-  //     doc.text(`Name: ${finalBooking.name}`, 10, 20);
-  //     doc.text(`Email: ${finalBooking.email}`, 10, 30);
-  //     doc.text(`Phone: ${finalBooking.phone}`, 10, 40);
-  //     doc.text(`Booking Date: ${finalBooking.bookingDate}`, 10, 50);
-  //     doc.text(`Adult Price: ${finalBooking.adultPrice}`, 10, 60);
-  //     doc.text(`Children Price: ${finalBooking.childrenPrice}`, 10, 70);
-  
-  //     const imgData = qrCodeURL;
-  //     doc.addImage(imgData, 'PNG', 10, 80, 50, 50);
-  
-  //   const contentHtml = `
-  //   <div id="ticket-container" style="width: 600px; margin: 0 auto; font-family: 'Arial', sans-serif; border: 1px solid #ddd; padding: 30px; background-color: #f0f9ff; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);">
-  //     <h1 style="text-align: center; color: #007BFF; margin-bottom: 20px; font-size: 30px; font-weight: bold;">Resort Booking Confirmation</h1>
-      
-  //     <!-- Guest Information Section -->
-  //     <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
-  //       <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Guest Information</h3>
-  //       <p style="font-size: 20px; color: #555;"><strong>Name:</strong> ${finalBooking.name}</p>
-  //       <p style="font-size: 20px; color: #555;"><strong>Email:</strong> ${finalBooking.email}</p>
-  //       <p style="font-size: 20px; color: #555;"><strong>Phone:</strong> ${finalBooking.phone}</p>
-  //     </div>
-  
-  //     <!-- Booking Details Section -->
-  //     <div style="margin-bottom: 25px; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
-  //       <h3 style="font-size: 25px; color: #333; margin-bottom: 10px;">Booking Details</h3>
-  //       <p style="font-size: 20px; color: #555;"><strong>Booking Date:</strong> ${finalBooking.bookingDate}</p>
-  //       <p style="font-size: 20px; color: #555;"><strong>Adult Price:</strong> $${finalBooking.adultPrice}</p>
-  //       <p style="font-size: 20px; color: #555;"><strong>Children Price:</strong> $${finalBooking.childrenPrice}</p>
-  //     </div>
-  
-  //     <!-- QR Code Section -->
-  //     <div style="margin-bottom: 25px; text-align: center; background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);">
-  //       <h3 style="font-size: 22px; color: #333; margin-bottom: 10px;">QR Code</h3>
-  //       <img src="data:image/png;base64,${qrCodeURL}" alt="QR Code" style="width: 250px; height: 250px; border: 2px solid #007BFF; border-radius: 10px; margin-top: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);" />
-  //     </div>
-  
-  //     <!-- Additional Information Section -->
-  //     <div style="text-align: center; background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); margin-top: 20px;">
-  //       <p style="font-size: 18px; color: #777;">Thank you for choosing our resort! We look forward to hosting you.</p>
-  //       <p style="font-size: 18px; color: #888;">Booking ID: ${response.data.booking._id}</p>
-  //     </div>
-  
-  //     <!-- Footer -->
-  //     <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888;">
-  //       <p>© 2024 Bharti Resort . All rights reserved.</p>
-  //     </div>
-  //   </div>
-  // `;
-  //     const ticketContainer = document.createElement('div');
-  //     ticketContainer.innerHTML = contentHtml;
-  //     document.body.appendChild(ticketContainer);
-  
-  //     // Use html2canvas to capture the HTML and convert it to an image
-  //     const canvas = await html2canvas(ticketContainer, { scale: 2 });
-  //     const imageBlob = await new Promise((resolve) =>
-  //       canvas.toBlob((blob) => resolve(blob), "image/png")
-  //     );
-  
-  //     // Clean up
-  //     document.body.removeChild(ticketContainer);
-  
-  //     const imageUrl = URL.createObjectURL(imageBlob);
-  //     const link = document.createElement('a');
-  //     link.href = imageUrl;
-  //     link.download = 'booking-details.png';
-  //     link.click();
-  
-  //     // Create FormData to send the image to the server
-  //     const formData = new FormData();
-  //     formData.append("image", imageBlob, "ticket.png");
-  //     formData.append("qrCode", qrCodeURL);
-  
-  //     console.log("qrCodeURL", qrCodeURL);
-  
-  //     // Add optional extra fields (phone, planId, etc.)
-  //     if (newBooking.phone || newBooking.planId || newBooking.selectedSubPackage) {
-  //       formData.append("phone", newBooking.phone);
-  //       formData.append("Plan", newBooking.planId || "Default Plan");
-  //       formData.append("subpackage", newBooking.selectedSubPackage?.name || "Default SubPackage");
-  //       formData.append("Total amount", finalBooking.totalAmount || 'N/A');
-  //       formData.append("Date", new Date(finalBooking.bookingDate).toLocaleDateString());
-  //       formData.append("Booking ID", response.data.booking._id || 'No ID');
-  //     } else {
-  //       console.error("Phone number is not available");
-  //     }
-  
-  //     // Send the formData (image and additional data) to the server
-  //     const serverResponse = await axios.post(
-  //       `${endpoints.serverBaseURL}/api/receive-image`,
-  //       formData,
-  //       {
-  //         headers: { "Content-Type": "multipart/form-data" },
-  //       }
-  //     );
-  
-  //     console.log("Response from server:", serverResponse);
-  
-  //     if (serverResponse.status === 200) {
-  //       toast.success("Booking done successfully");
-  //     } else {
-  //       console.error("Error sending image and QR code:", serverResponse);
-  //     }
-  
-  //     // Optionally fetch bookings and update state
-  //     fetchBookings();
-  //     setRowCount(bookings.length + 1);
-  
-  //     // Reset new booking state
-  //     setNewBooking({
-  //       name: "",
-  //       email: "",
-  //       phone: "",
-  //       planId: "",
-  //       selectedSubPackage: {},
-  //       gstNumber: "",
-  //       address: "",
-  //       bookingDate: new Date().toISOString().split("T")[0],
-  //       adult: 1,
-  //       children: 0,
-  //       paymentMethod: "",
-  //       referenceId: "",
-  //       complementaryPerson: "",
-  //       adultPrice: "",
-  //       childrenPrice: "",
-  //       upiId: "",
-  //       creditCardNumber: "",
-  //       bookingViaPerson: adminName,
-  //       subpackageName: "",
-  //       remark:""
-  //     });
-  
-  //     // Close modal or booking form
-  //     handleClose();
-  //     return new Promise((resolve) => setTimeout(resolve, 2000));
-  //     // Show success toast
-      
-  
-  //   } catch (error) {
-  //     console.error("Error saving booking:", error);
-  //   }
-  // };
-  
   
   const handleSave = async () => {
     // Assuming GST is 18% (adjust as needed)
@@ -693,19 +527,6 @@ const handleAdultInputSubmit = () => {
 };
 
 
-
-// for Children
-
-// const handleChildrenPriceChange = (event) => {
-//   const newValue = event.target.value;
-//   setSelectedChildrenPrice(newValue);
-
-//   if (newValue && newValue < choosePlan?.subpackages[selectedSubPackageIndex]?.child_price) {
-//     setShowChildrenWarning(true);
-//   } else {
-//     setShowChildrenWarning(false);
-//   }
-// };
 const handleChildCountChange = (value) => {
   if (value > 50) {
     value = 50;
@@ -775,13 +596,7 @@ const handleChildrenInputSubmit = () => {
     setChoosePlan(newValue);
   };
 
-  // const handleChildCountChange = (value) => {
-  //   setNewBooking((prev) => {
-  //     const updatedBooking = { ...prev, children: value };
-  //     calculateTotal(updatedBooking.adult, updatedBooking.children);
-  //     return updatedBooking;
-  //   });
-  // };
+
 
   const handleSubPackageChange = (event, newValue) => {
     if (newValue) {
@@ -820,9 +635,11 @@ const handleChildrenInputSubmit = () => {
 
   const handleMenuOpen = (event, booking) => {
     setAnchorEl(event.currentTarget);
-    console.log("anchor" , event.currentTarget);
+    // console.log("anchor" , event.currentTarget);
+    console.log("Current Booking ----- ",booking)
     setCurrentBooking(booking);
-    console.log("current" , booking);
+    console.log("After Set Current Booking ----- ",booking)
+    // console.log("current" , booking);
   };
 
   const handleMenuClose = () => {
@@ -880,6 +697,7 @@ const handleChildrenInputSubmit = () => {
       const updatedBookings = bookings.map((booking) =>
         booking._id === currentBooking._id ? newBooking : booking
       );
+      console.log("update Booking ------",updatedBookings)
       setBookings(updatedBookings);
       handleEditClose();
     } catch (error) {
@@ -981,6 +799,12 @@ const handleChildrenInputSubmit = () => {
     {
       field:"franchiseCode",
       headerName : "Ref Code",
+      width : 150,
+      valueGetter : (params) => params,
+    },
+    {
+      field:"source",
+      headerName : "Ref Source",
       width : 150,
       valueGetter : (params) => params,
     },
@@ -1771,6 +1595,14 @@ const handleChildrenInputSubmit = () => {
                           </TableCell>
                           <TableCell style={{ backgroundColor: "#e0e0e0" }}>
                             {currentBooking.franchiseCode}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                          Ref Source
+                          </TableCell>
+                          <TableCell style={{ backgroundColor: "#e0e0e0" }}>
+                            {currentBooking.source}
                           </TableCell>
                         </TableRow>
                       </TableBody>

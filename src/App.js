@@ -3,6 +3,8 @@ import { Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
 import BookingList from "./pages/BookingList";
+import Attendence from "./pages/AttendenceList"
+
 import NotFound from "./pages/PageNotFound";
 import Grid from "@mui/material/Grid";
 import Plans from "./pages/Plans";
@@ -26,6 +28,7 @@ import BookingConfirmPage from "./pages/BookingConfirmPage";
 import Preloader from "./components/Preloader";
 import ReportPage from "./pages/ReportPage";
 import Ticket from "./components/Ticket";
+import SocialShare from "./components/SocialShare";
 
 // import AgentRole from "./components/AgentRole";
 
@@ -55,7 +58,7 @@ const App = () => {
     return <Preloader />;
   }
   return (
-    <Box sx={{ background: "#EEF1FF", minHeight: "100vh" }}>
+    <Box sx={{ background: "#EEF1FF"}}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
 
@@ -65,6 +68,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
 
         <Route path="/bookings" element={<BookingList />} />
+        <Route path="/attendence" element={<Attendence />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/coupons" element={<CouponsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
@@ -75,6 +79,7 @@ const App = () => {
         <Route path="/bookingconfirm" element={<BookingConfirmPage />} />
         <Route path="/addadminchecker" element={<AddUserPage />} />
         <Route path="/ticket" element={<Ticket />} />
+        <Route path="/sharelink" element={<SocialShare />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -4,8 +4,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography'
 import Toolbar from '@mui/material/Toolbar';
 import Navbar from '../components/Navbar';
+import Card from '../components/Card';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
+
 const drawerWidth = 240;
 
 function Home() {
@@ -68,6 +70,8 @@ useEffect(() => {
         <Toolbar />
         <h1> {'👋'}{greeting}{" "}</h1>
         <h4>To access the dashboard get premium subscription</h4>
+
+        {/* <Card sx={{ maxWidth: 345 }} /> */}
       </Box>
     </Box>
     </>

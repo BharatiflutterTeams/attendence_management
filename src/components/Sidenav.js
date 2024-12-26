@@ -93,6 +93,7 @@ console.log("isAgent",isAgent);
   const navigate = useNavigate();
   
   const open = useAppStore((state)=>state.dopen);
+
   
   
   React.useEffect(()=>{roleCheck()},[])
@@ -196,7 +197,9 @@ console.log("isAgent",isAgent);
             </ListItemButton>
           </ListItem>
 
-          <ListItem
+
+
+          {/* <ListItem
             disablePadding
             sx={{ display: "block" }}
             onClick={() => {
@@ -221,10 +224,69 @@ console.log("isAgent",isAgent);
               </ListItemIcon>
               <ListItemText primary="Bookings" sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
+          </ListItem> */}
+
+
+          <ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/attendence");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <EventAvailableIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText primary="Attendence" sx={{ opacity: open ? 1 : 0 }} />
+            </ListItemButton>
           </ListItem>
 
+
+          {/* { isSuperAdmin &&(<ListItem
+            disablePadding
+            sx={{ display: "block" }}
+            onClick={() => {
+              navigate("/attendence");
+            }}
+          >
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: open ? "initial" : "center",
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <CorporateFareIcon style={{ fill: "#867AE9" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Attendence"
+                sx={{ opacity: open ? 1 : 0 }}
+              />
+            </ListItemButton>
+          </ListItem>)} */}
+
           
-          {!isAgent && (
+          {/* {!isAgent && (
         <>
           <ListItem
             disablePadding
@@ -281,7 +343,7 @@ console.log("isAgent",isAgent);
           </ListItem>
         </>
       )}
-    
+     */}
            
           { isSuperAdmin &&(<ListItem
             disablePadding
@@ -345,7 +407,7 @@ console.log("isAgent",isAgent);
             </ListItemButton>
           </ListItem>)}
 
-          {isSuperAdmin && (
+          {/* {isSuperAdmin && (
             <ListItem
               disablePadding
               sx={{ display: "block" }}
@@ -375,7 +437,7 @@ console.log("isAgent",isAgent);
                 />
               </ListItemButton>
             </ListItem>
-          )}
+          )} */}
            
            {isSuperAdmin && (
             <ListItem

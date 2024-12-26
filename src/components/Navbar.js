@@ -157,8 +157,8 @@ const handleLogout=()=>{
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center',  }}>
-      <img src={companyData?.logo} alt="Company Logo" width="30" height="30" style={{ borderRadius: '50%', marginRight: '12px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }} />
+          <Box sx={{ display: 'flex', alignItems: 'center'}}>
+      <img src={companyData?.logo} alt="Company Logo" width="30" height="30" style={{  background : 'white', borderRadius: '50%', marginRight: '12px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }} />
            </Box>
           <Typography
             variant="h6"

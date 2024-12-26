@@ -267,6 +267,7 @@ export default function UsersPage() {
               >
                 <MenuItem value="admin">Admin</MenuItem>
                 <MenuItem value="checker">Checker</MenuItem>
+                <MenuItem value="agent">Agent</MenuItem>
               </TextField>
             </DialogContent>
             <DialogActions>

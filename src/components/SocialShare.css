@@ -1,0 +1,117 @@
+/* Container for the whole SocialShare component */
+.social-share-container {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .heading {
+    font-size: 24px;
+    color: #3b3b3b;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  
+  .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+  }
+  
+  .platform-selector {
+    margin-bottom: 20px;
+  }
+  
+  .platform-label {
+    font-size: 14px;
+    color: #3b3b3b;
+    margin-bottom: 5px;
+    display: block;
+  }
+  
+  .platform-dropdown {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    outline: none;
+  }
+  
+  .generate-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #867AE9;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .generate-button:hover {
+    background-color: #6e63c5;
+  }
+  
+  .generated-link-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e8e8e8;
+    border-radius: 4px;
+    text-align: left;
+  }
+  
+  .generated-link-title {
+    font-size: 18px;
+    color: #3b3b3b;
+    font-weight: bold;
+  }
+  
+  .generated-link {
+    font-size: 16px;
+    color: #2a2a2a;
+    word-wrap: break-word;
+    margin-bottom: 10px;
+  }
+  
+  .copy-button {
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #fff;
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .copy-button:hover {
+    background-color: #45a049;
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .social-share-container {
+      padding: 15px;
+    }
+  
+    .generate-button,
+    .copy-button {
+      font-size: 14px;
+    }
+  }
+  

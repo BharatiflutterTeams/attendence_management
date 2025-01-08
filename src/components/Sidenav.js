@@ -148,7 +148,7 @@ console.log("isAgent",isAgent);
     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
       <img src={companyData.logo} alt="Company Logo" width="50" height="50" style={{ borderRadius: '50%', marginRight: '12px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }} />
       <Box>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>{companyData.name}</Typography>
+        <Typography variant="h7" sx={{ fontWeight: 'bold', color: '#333' }}>{companyData.name}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Link to="/companyprofile" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Typography variant="body2" color="primary" sx={{ display: 'flex', alignItems: 'center' ,  }}>
@@ -250,7 +250,7 @@ console.log("isAgent",isAgent);
               >
                 <EventAvailableIcon style={{ fill: "#867AE9" }} />
               </ListItemIcon>
-              <ListItemText primary="Attendence" sx={{ opacity: open ? 1 : 0 }} />
+              <ListItemText primary="Candidates" sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
           </ListItem>
 

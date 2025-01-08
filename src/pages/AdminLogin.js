@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../appStore'
 import endpoints from '../Endpoints/endpoint';
+import { jwtDecode } from 'jwt-decode';
 //import { useAuthStore } from '../appStore';
 
 
@@ -24,15 +25,24 @@ const AdminLogin = () => {
         email,
         password,
       });
-
+  
       if (response.status === 200) {
         const { token } = response.data;
-        sessionStorage.setItem('jwtToken', token); // Store the token in sessionStorage
+  
+        // Store the token in sessionStorage
+        sessionStorage.setItem('jwtToken', token);
         console.log('Login successful');
-        //setToken(String(token));
-        toast.success("Login successfull")
-        navigate('/');
-        // Redirect to the admin dashboard or another protected route
+        toast.success("Login successful");
+  
+        // Decode the token to get the role
+        const { role } = jwtDecode(token);
+  
+        // Navigate based on the role
+        if (role === 'checker') {
+          navigate('/scanner'); // Redirect to scanner page for checker role
+        } else {
+          navigate('/'); // Redirect to home page for other roles
+        }
       } else {
         setError('Invalid login credentials');
         toast.error('Invalid login credentials');
@@ -43,6 +53,7 @@ const AdminLogin = () => {
       toast.error('Error logging in. Please try again.');
     }
   };
+  
  // https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?cs=srgb&dl=pexels-pixabay-261169.jpg&fm=jpg
   return (
     <>

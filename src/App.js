@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
 import BookingList from "./pages/BookingList";
@@ -29,6 +29,8 @@ import Preloader from "./components/Preloader";
 import ReportPage from "./pages/ReportPage";
 import Ticket from "./components/Ticket";
 import SocialShare from "./components/SocialShare";
+import { jwtDecode } from "jwt-decode";
+import { use } from "react";
 
 // import AgentRole from "./components/AgentRole";
 
@@ -36,9 +38,40 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const setCompanyData = useAppStore((state) => state.setCompanyData);
 
+  const [roles, setRoles] = useState({
+      isChecker: false,
+    });
+
+    const navigate = useNavigate();
+
   useEffect(() => {
     fetchDetails();
   }, [setCompanyData]);
+
+  useEffect(() => {
+      const roleCheck = () => {
+        const token = sessionStorage.getItem("jwtToken");
+        if (token) {
+          const { role } = jwtDecode(token);
+          setRoles({
+            isChecker: role === "checker",
+          });
+        }
+      };
+      roleCheck();
+    }, []);
+
+    useEffect(() => {
+      if (roles.isChecker) {
+        navigate("/scanner");
+      }
+    }, [roles.isChecker, navigate]);
+
+    useEffect(() => {
+      if(sessionStorage.getItem("jwtToken") === null){
+        navigate("/login");
+      }
+    }, [navigate]);
 
   const fetchDetails = async () => {
     try {
@@ -62,7 +95,10 @@ const App = () => {
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
 
-
+        <Route
+          path="/"
+          element={roles.isChecker ? <Navigate to="/scanner" /> : <Home />}
+        />
        
 
         <Route path="/" element={<Home />} />

@@ -398,7 +398,8 @@ export default function ReportPage() {
                   <Select
                     value={rowsPerPage}
                     onChange={handleRowsPerPageChange}
-                    sx={{ width: 60 }}
+                    size="small"
+                    sx={{ width: 70 }}
                   >
                     {[5, 10, 25].map((option) => (
                       <MenuItem key={option} value={option}>

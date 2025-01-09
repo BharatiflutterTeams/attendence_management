@@ -153,11 +153,12 @@ import endpoints from "../Endpoints/endpoint";
 import { Close, WhatsApp } from "@mui/icons-material";
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
-const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal }) => {
+const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, newAdmissions }) => {
   const [isCardVisible, setIsCardVisible] = React.useState(true);
   const cardRef = useRef();
   const { name, email, mobile, enrollmentDate, endDate, id } = student;
 
+  console.log("new Student Data:", newAdmissions);
   const formatDate = (date) => {
     if (!date) return "";
     const options = { year: "numeric", month: "short", day: "numeric" };

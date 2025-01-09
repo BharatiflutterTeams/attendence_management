@@ -106,6 +106,7 @@ const StudentsTable = () => {
   const [newTokenValue, setNewTokenValue] = useState(""); // Store the new token value
   const [anchorEl, setAnchorEl] = useState(null);
   const [invokeExport, setInvokeExport] = useState(null);
+  const [newAdmissions, setNewAdmissions] = useState([]);
 
   const idCardRef = useRef();
 
@@ -172,6 +173,7 @@ const StudentsTable = () => {
             newAdmissions > 1 ? "s" : ""
           } added successfully!`
         );
+        setNewAdmissions(students);
       } else {
         toast.info("No new admissions found.");
       }
@@ -338,6 +340,7 @@ const StudentsTable = () => {
   const handleClick = (event, student) => {
     setAnchorEl(event.currentTarget);
     setSelectedStudent(student);
+    console.log("clicked", student)
   };
 
   const handleTokenValueChange = (event) => {
@@ -901,6 +904,7 @@ const StudentsTable = () => {
             >
               {selectedStudent && (
                 <IDCard
+                newAdmissions={newAdmissions}
                   handleCloseModal={handleCloseModal}
                   invokeExport={invokeExport}
                   onExportComplete={() => setInvokeExport(null)}

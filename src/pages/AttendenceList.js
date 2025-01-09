@@ -493,7 +493,14 @@ const StudentsTable = () => {
         const isEditing = editingToken === params.row.id;
 
         return isEditing ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, paddingLeft: 6 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              paddingLeft: 6,
+            }}
+          >
             {/* Editable Total Tokens Input */}
             <TextField
               value={newTokenValue}
@@ -706,13 +713,17 @@ const StudentsTable = () => {
       <Box sx={{ display: "flex", flexGrow: 1 }}>
         <Sidenav />
 
-        <Container sx={{
-    flexGrow: 1,
-    padding: 1,
-    maxWidth: "none",
-    overflow: "auto", // Ensure content is scrollable
-    display: "flex",
-    flexDirection: "column",}} maxWidth="none">
+        <Container
+          sx={{
+            flexGrow: 1,
+            padding: 1,
+            maxWidth: "none",
+            overflow: "auto", // Ensure content is scrollable
+            display: "flex",
+            flexDirection: "column",
+          }}
+          maxWidth="none"
+        >
           <Box
             sx={{
               display: "flex",
@@ -810,64 +821,69 @@ const StudentsTable = () => {
 
           {/* <Divider sx={{ marginTop: 2, marginBottom: 2 }} /> */}
 
-          <Box sx={{ height: 570, width: "100%" }}>
-          <Box sx={{ height: 570, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              getRowId={(row) => row.id}
-              page={page}
-              pageSize={rowsPerPage}
-              loading={loading}
-              sx={{
-                "& .MuiDataGrid-cell": {
-                  fontSize: "0.9rem",
-                  backgroundColor: "#ffffff",
-                },
-                "& .MuiDataGrid-row": {
-                  backgroundColor: "#ffffff",
-                },
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#f5f5f5",
-                  fontWeight: "bold",
-                },
-              }}
-              hideFooter
-              
-            />
-    <Box sx={{ display: "flex", justifyContent: "end", alignItems: "center" }}>
-        <IconButton
-          onClick={() => handlePageChange(page - 1)}
-          disabled={page === 0}
-        >
-          &lt;
-        </IconButton>
-        <Typography sx={{ margin: "0 10px" }}>
-          Page {page + 1} of {Math.ceil(totalCount / rowsPerPage)}
-        </Typography>
-        <IconButton
-          onClick={() => handlePageChange(page + 1)}
-          disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
-        >
-          &gt;
-        </IconButton>
-      </Box>
-          </Box>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-              sx={{
-                "& .MuiPaper-root": {
-                  boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.15)",
-                },
-              }}
-            >
-              <MenuItem onClick={() => handleMenuItemClick("showId")}>
-                Access Card
-              </MenuItem>
-            </Menu>
+          <Box sx={{ height: 570, width: "100%", position: "relative" }}>
+            {rows.length > 0 ? (
+              <>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  getRowId={(row) => row.id}
+                  page={page}
+                  pageSize={rowsPerPage}
+                  loading={loading}
+                  sx={{
+                    "& .MuiDataGrid-cell": {
+                      fontSize: "0.9rem",
+                      backgroundColor: "#ffffff",
+                    },
+                    "& .MuiDataGrid-row": {
+                      backgroundColor: "#ffffff",
+                    },
+                    "& .MuiDataGrid-columnHeaders": {
+                      backgroundColor: "#f5f5f5",
+                      fontWeight: "bold",
+                    },
+                  }}
+                  hideFooter
+                />
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "end",
+                    alignItems: "center",
+                  }}
+                >
+                  <IconButton
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page === 0}
+                  >
+                    &lt;
+                  </IconButton>
+                  <Typography sx={{ margin: "0 10px" }}>
+                    Page {page + 1} of {Math.ceil(totalCount / rowsPerPage)}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
+                  >
+                    &gt;
+                  </IconButton>
+                </Box>
+              </>
+            ) : (
+              <Typography
+                variant="h6"
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  color: "gray",
+                }}
+              >
+                No results found for "{filterData.searchValue}"
+              </Typography>
+            )}
           </Box>
 
           <Modal open={modalOpen} onClose={handleCloseModal}>
@@ -885,8 +901,8 @@ const StudentsTable = () => {
             >
               {selectedStudent && (
                 <IDCard
-                handleCloseModal={handleCloseModal}
-                invokeExport={invokeExport}
+                  handleCloseModal={handleCloseModal}
+                  invokeExport={invokeExport}
                   onExportComplete={() => setInvokeExport(null)}
                   student={selectedStudent}
                 />

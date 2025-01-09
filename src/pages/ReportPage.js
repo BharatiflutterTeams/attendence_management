@@ -1,514 +1,361 @@
-import React, { useEffect, useState } from "react";
-import Sidenav from "../components/Sidenav";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Toolbar from "@mui/material/Toolbar";
+"use client";
+
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { jwtDecode } from "jwt-decode";
-import { useNavigate } from "react-router-dom";
-import { DataGrid } from "@mui/x-data-grid";
-import axios from "axios";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import Sidenav from "../components/Sidenav";
 import {
-  Grid,
   TextField,
-  IconButton,
-  Menu,
+  Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
+  Button,
+  Paper,
   Table,
   TableBody,
-  TableRow,
   TableCell,
-  Paper,
   TableContainer,
-  DialogActions,
-  Button,
+  TableHead,
+  TableRow,
+  FormControl,
+  InputLabel,
+  Box,
+  Typography,
+  IconButton,
 } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import endpoints from "../Endpoints/endpoint";
-import DownloadExcel from "../components/DownloadExcel";
-import { enGB } from "date-fns/locale";
-import { differenceInMonths, subMonths, addMonths, format } from "date-fns";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import axios from "axios";
+import { ClearIcon } from "@mui/x-date-pickers";
 
-const drawerWidth = 240;
+const debounce = (func, delay) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), delay);
+  };
+};
 
 export default function ReportPage() {
-  const navigate = useNavigate();
-  const [bookings, setBookings] = useState([]);
-  const [adminRole, setAdminRole] = useState();
-  const [fromDate, setFromDate] = useState(null);
-  const [toDate, setToDate] = useState(null);
-  const [pageSize, setPageSize] = useState(1000);
-  const [currentBooking, setCurrentBooking] = useState({});
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [viewOpen, setViewOpen] = useState(false);
+  const today = new Date();
+  const currentMonth = String(today.getMonth() + 1).padStart(2, "0"); // Get current month (01-based)
+  const currentYear = String(today.getFullYear()); // Get current year
+  const currentDay = today.getDate(); // Get today's date
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const [month, setMonth] = useState(currentMonth);
+  const [year, setYear] = useState(currentYear);
+  const [attendance, setAttendance] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [candidateName, setCandidateName] = useState("");
+  const [debouncedName, setDebouncedName] = useState(candidateName);
+  const [daysInData, setDaysInData] = useState([]);
+  
 
-  useEffect(() => {
-    if (fromDate && toDate) {
-      fetchBookings();
-    }
-  }, [fromDate, toDate, pageSize]);
+  const monthNames = [
+    { name: "January", value: "01" },
+    { name: "February", value: "02" },
+    { name: "March", value: "03" },
+    { name: "April", value: "04" },
+    { name: "May", value: "05" },
+    { name: "June", value: "06" },
+    { name: "July", value: "07" },
+    { name: "August", value: "08" },
+    { name: "September", value: "09" },
+    { name: "October", value: "10" },
+    { name: "November", value: "11" },
+    { name: "December", value: "12" },
+  ];
 
-  const checkAuth = () => {
-    const token = sessionStorage.getItem("jwtToken");
-    if (token && token !== "" && token !== null) {
-      const decoded = jwtDecode(token);
-      const role = decoded.role;
-      setAdminRole(role);
-      if (role !== "superadmin") {
-        navigate("/");
-      }
-    } else {
-      console.log("Token not Found");
-      navigate("/login");
-    }
-  };
-  const page = 1;
-  const fetchBookings = async () => {
+  const fetchAttendance = async (
+    selectedMonth = month,
+    selectedYear = year
+  ) => {
     try {
       const response = await axios.get(
-        `${endpoints.serverBaseURL}/api/admin/bookings/byrange`,
+        `http://localhost:5001/api/scan/attendance`,
         {
-          params: {
-            fromDate: fromDate.toISOString(),
-            toDate: toDate.toISOString(),
-            pageSize,
-            page,
-            //date: fromDate,
-          },
+          params: { month: selectedMonth, year: selectedYear },
         }
       );
-      //console.log("bookings by range", response.data.bookings);
-      const finalBookings = response.data.bookings.map((booking) => ({
-        ...booking,
-        subpackage: booking?.selectedSubPackage?.name || "unknown",
+
+      const attendanceData = response.data.data;
+
+      // Filter attendance data to exclude future dates
+      const filteredAttendanceData = attendanceData.filter((entry) => {
+        const [entryYear, entryMonth, entryDay] = entry.date
+          .split("-")
+          .map(Number);
+
+        if (
+          entryYear > Number(currentYear) ||
+          (entryYear === Number(currentYear) &&
+            entryMonth > Number(currentMonth)) ||
+          (entryYear === Number(currentYear) &&
+            entryMonth === Number(currentMonth) &&
+            entryDay > currentDay)
+        ) {
+          return false; // Exclude future dates
+        }
+        return true;
+      });
+
+      const totalDaysInMonth =
+        selectedYear === currentYear && selectedMonth === currentMonth
+          ? currentDay // Limit to today's date if it's the current month
+          : new Date(selectedYear, selectedMonth, 0).getDate(); // Total days in the selected month
+
+      const employeeMap = {};
+      filteredAttendanceData.forEach((entry) => {
+        const [, , day] = entry.date.split("-").map(Number); // Extract day
+        entry.studentNames.forEach((name) => {
+          if (!employeeMap[name]) {
+            employeeMap[name] = Array(totalDaysInMonth).fill(0); // Initialize only up to totalDaysInMonth
+          }
+          employeeMap[name][day - 1] = 1; // Mark attendance
+        });
+      });
+
+      const employeeList = Object.keys(employeeMap).map((name) => ({
+        name,
+        attendance: employeeMap[name],
       }));
-      setBookings(finalBookings);
+
+      setEmployees(employeeList);
+      setAttendance(filteredAttendanceData);
+      setHasSearched(true);
+
+      // Store the unique days in the data
+      const uniqueDays = [
+        ...new Set(
+          filteredAttendanceData.map((entry) => {
+            const [entryYear, entryMonth, entryDay] = entry.date
+              .split("-")
+              .map(Number);
+            return entryDay;
+          })
+        ),
+      ];
+
+      setDaysInData(uniqueDays); // Update state with days
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      console.error(error);
     }
   };
 
-  const handleMenuOpen = (event, booking) => {
-    setAnchorEl(event.currentTarget);
-    //console.log("booking", booking);
-    setCurrentBooking(booking);
+  useEffect(() => {
+    const debouncedSearch = debounce(() => {
+      setDebouncedName(candidateName);
+    }, 1000);
+
+    debouncedSearch();
+
+    return () => clearTimeout(debouncedSearch);
+  }, [candidateName]);
+
+  useEffect(() => {
+    fetchAttendance();
+  }, []);
+
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(debouncedName.toLowerCase())
+  );
+
+  const clearInput = () => {
+    setCandidateName("");
   };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setCurrentBooking(null);
-  };
-
-  const handleViewOpen = () => {
-    setViewOpen(true);
-  };
-
-  const handleViewClose = () => {
-    setViewOpen(false);
-  };
-
-  // const finalBookings = bookings.map((booking) => ({
-  //   ...booking,
-  //   subpackage: booking.planId.subpackages[booking.selectedSubPackage].name,
-  // }));
-
-  const columns = [
-    {
-      field: "userId",
-      headerName: "Name",
-      width: 200,
-      valueGetter: (params) => params.name || "Unknown",
-    },
-    {
-      field: "planId",
-      headerName: "Plan",
-      width: 150,
-      valueGetter: (params) => params?.title || "Unknown",
-    },
-    {
-      field: "subpackage",
-      headerName: "Sub Package",
-      width: 250,
-      valueGetter: (params) => params || "Unknown",
-    },
-    {
-      field: "franchiseCode",
-      headerName: "Ref Code",
-      width: 150,
-      valueGetter: (params) => params,
-    },
-    { field: "adult", headerName: "Adult", width: 100 },
-    { field: "children", headerName: "Children", width: 100 },
-    {
-      field: "bookingDate",
-      headerName: "Reservation Date",
-      width: 150,
-      valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
-    },
-    {
-      field: "createdAt",
-      headerName: "Booking Date",
-      width: 150,
-      valueGetter: (params) => new Date(params).toLocaleDateString("en-GB"),
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 100,
-      renderCell: (params) => (
-        <>
-          <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
-            <MoreVertIcon />
-          </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl) && currentBooking === params.row}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleViewOpen}>View details</MenuItem>
-          </Menu>
-        </>
-      ),
-    },
-  ];
 
   return (
     <>
       <Navbar />
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", mt: 8 }}>
         <Sidenav />
         <Box
-          component="main"
           sx={{
             flexGrow: 1,
             p: 3,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            maxWidth: 1420,
+            margin: "0 auto",
+            overflowX: "auto",
+            transition: "margin-left 0.3s ease",
+            height: "calc(100vh - 68px)",
           }}
         >
-          <Toolbar />
-
-          <LocalizationProvider dateAdapter={AdapterDayjs} locale={enGB}>
-            <Grid container spacing={0.5} sx={{ marginBottom: 2 }}>
-              <Grid item xs={4} sm={4}>
-                <DatePicker
-                  label="From Date"
-                  value={fromDate}
-                  inputFormat="dd/MM/yyyy"
-                  onChange={(newValue) => setFromDate(newValue)}
-                  renderInput={(params) => <TextField {...params} />}
+          <Box sx={{ p: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              <Typography variant="h4" sx={{ mb: 0, whiteSpace: "nowrap" }}>
+                Attendance Report
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <TextField
+                  label="Candidate Name"
+                  placeholder="Enter Name"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  sx={{ minWidth: 200 }}
+                  InputProps={{
+                    endAdornment: candidateName && (
+                      <IconButton
+                        onClick={clearInput}
+                        sx={{ padding: 0 }}
+                        aria-label="clear"
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    ),
+                  }}
                 />
-              </Grid>
-              <Grid item xs={4} sm={4}>
-                <DatePicker
-                  label="To Date"
-                  value={toDate}
-                  inputFormat="dd/MM/yyyy"
-                  onChange={(newValue) => setToDate(newValue)}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth size="small" />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={4} sm={4}>
-                <DownloadExcel bookings={bookings} />
-              </Grid>
-            </Grid>
-          </LocalizationProvider>
 
-          <Box sx={{ height: "69vh", width: "100%" }}>
-            <DataGrid
-              rows={bookings}
-              columns={columns}
-              pageSize={pageSize}
-              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-              rowsPerPageOptions={[5, 10, 20]}
-              getRowId={(row) => row._id}
-              sx={{ background: "#ffffff" }}
-              //autoHeight
-            />
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel>Select Month</InputLabel>
+                  <Select
+                    value={month}
+                    label="Select Month"
+                    onChange={(e) => setMonth(e.target.value)}
+                  >
+                    {monthNames.map((m) => (
+                      <MenuItem key={m.value} value={m.value}>
+                        {m.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel>Select Year</InputLabel>
+                  <Select
+                    value={year}
+                    label="Select Year"
+                    onChange={(e) => setYear(e.target.value)}
+                  >
+                    {[2023, 2024, 2025].map((yr) => (
+                      <MenuItem key={yr} value={yr}>
+                        {yr}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Button
+                  variant="contained"
+                  onClick={() => fetchAttendance(month, year)}
+                  sx={{
+                    bgcolor: "rgb(134, 122, 233)",
+                    "&:hover": { bgcolor: "rgb(95, 85, 190)" },
+                    minWidth: 200,
+                    height: 56,
+                  }}
+                >
+                  Search
+                </Button>
+              </Box>
+            </Box>
+
+            {hasSearched && filteredEmployees.length === 0 && candidateName ? (
+              <Typography
+                variant="h6"
+                sx={{ mt: 4, textAlign: "center", color: "gray" }}
+              >
+                No matching candidates found for "{candidateName}".
+              </Typography>
+            ) : hasSearched && filteredEmployees.length === 0 ? (
+              <Typography variant="h6" sx={{ mt: 4, textAlign: "center" }}>
+                No attendance data found for the selected month and year.
+              </Typography>
+            ) : (
+              <TableContainer
+                component={Paper}
+                sx={{ overflowX: "auto", maxHeight: "calc(100vh - 200px)" }}
+              >
+                <Table stickyHeader sx={{ minWidth: 650 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: 0,
+                          zIndex: 3,
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Candidate Name
+                      </TableCell>
+                      {daysInData.map((day, index) => (
+                        <TableCell
+                          key={index}
+                          align="center"
+                          sx={{ fontWeight: "bold" }}
+                        >
+                          {day}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+                    {filteredEmployees.map((employee) => (
+                      <TableRow
+                        key={employee.name}
+                        sx={{
+                          "&:nth-of-type(odd)": {
+                            bgcolor: "rgba(0, 0, 0, 0.02)",
+                          },
+                        }}
+                      >
+                        <TableCell
+                          component="th"
+                          scope="row"
+                          sx={{
+                            position: "sticky",
+                            left: 0,
+                            backgroundColor: "white",
+                            zIndex: 1,
+                          }}
+                        >
+                          {employee.name}
+                        </TableCell>
+                        {daysInData.map((day) => {
+                          const attendanceIndex = employee.attendance.findIndex(
+                            (status, index) => index + 1 === day
+                          );
+                          const status =
+                            attendanceIndex !== -1
+                              ? employee.attendance[attendanceIndex]
+                              : 0;
+                          return (
+                            <TableCell key={day} align="center">
+                              {status === 1 ? (
+                                <CheckIcon sx={{ color: "green" }} />
+                              ) : (
+                                <CloseIcon sx={{ color: "red" }} />
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Box>
         </Box>
       </Box>
-      <Dialog open={viewOpen} onClose={handleViewClose} fullWidth maxWidth="sm">
-        <DialogTitle style={{ backgroundColor: "#263238", color: "white" }}>
-          View Booking Details
-        </DialogTitle>
-        <DialogContent>
-          {currentBooking && (
-            <>
-              {currentBooking.plan && (
-                <div
-                  style={{
-                    height: "10px",
-                    backgroundColor:
-                      currentBooking.plan === "Gold"
-                        ? "yellow"
-                        : currentBooking.plan === "Jumbo"
-                        ? "orange"
-                        : "transparent",
-                    marginBottom: "10px",
-                  }}
-                />
-              )}
-              <Typography
-                variant="h6"
-                style={{ marginBottom: "10px", color: "#37474F" }}
-              >
-                Personal Information
-              </Typography>
-              <TableContainer
-                component={Paper}
-                style={{ marginBottom: "20px" }}
-              >
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Name
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking.userId?.name}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Email
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {currentBooking.userId?.email}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Phone
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking.userId?.phone}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        GST Number
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {currentBooking.userId?.gstNumber}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Address
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking.userId?.address}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Ref Code
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {currentBooking.franchiseCode}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <Typography
-                variant="h6"
-                style={{ marginBottom: "10px", color: "#37474F" }}
-              >
-                Booking Information
-              </Typography>
-              <TableContainer
-                component={Paper}
-                style={{ marginBottom: "20px" }}
-              >
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Booking ID
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking._id}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Booking Date
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {new Date(
-                          currentBooking.bookingDate
-                        ).toLocaleDateString("en-GB")}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Adult
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking.adult}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Children
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {currentBooking.children}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Plan
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking.planId?.title}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Sub Package
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        {currentBooking?.selectedSubPackage?.name}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Adult Price
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        ₹{currentBooking.adultPrice}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        Children Price
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                        ₹{currentBooking.childrenPrice}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Total Price
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        ₹{currentBooking?.totalAmount}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <Typography
-                variant="h6"
-                style={{ marginBottom: "10px", color: "#37474F" }}
-              >
-                Payment & Status
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        Payment Method
-                      </TableCell>
-                      <TableCell style={{ backgroundColor: "#e0e0e0" }}>
-                        {currentBooking.paymentMethod
-                          ? currentBooking.paymentMethod
-                          : "Online Booking"}
-                      </TableCell>
-                    </TableRow>
-                    {currentBooking.upiId && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          UPI ID
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking.upiId}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {currentBooking.creditCardNumber && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          RRN Number
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking.creditCardNumber}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {currentBooking.paymentId && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          Payment ID
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking?.paymentId}
-                        </TableCell>
-                      </TableRow>
-                    )}
-
-                    {currentBooking.referenceId && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          Reference ID/Room Number
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking.referenceId}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {currentBooking.complementaryPerson && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          Approved By
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking.complementaryPerson}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {adminRole === "superadmin" && (
-                      <TableRow>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          Booking done by
-                        </TableCell>
-                        <TableCell style={{ backgroundColor: "#f5f5f5" }}>
-                          {currentBooking.bookingViaPerson
-                            ? currentBooking.bookingViaPerson
-                            : "Atithi booking engine"}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleViewClose}
-            variant="contained"
-            style={{ backgroundColor: "#263238", color: "white" }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

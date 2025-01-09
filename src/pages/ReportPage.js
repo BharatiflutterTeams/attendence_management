@@ -25,6 +25,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
 import { ClearIcon } from "@mui/x-date-pickers";
+import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 
 const debounce = (func, delay) => {
   let timeout;
@@ -48,7 +49,9 @@ export default function ReportPage() {
   const [candidateName, setCandidateName] = useState("");
   const [debouncedName, setDebouncedName] = useState(candidateName);
   const [daysInData, setDaysInData] = useState([]);
-  
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const monthNames = [
     { name: "January", value: "01" },
@@ -163,6 +166,26 @@ export default function ReportPage() {
     setCandidateName("");
   };
 
+  const totalPages = Math.ceil(filteredEmployees.length / rowsPerPage);
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages - 1));
+  };
+
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Reset to the first page
+  };
+
+  const paginatedEmployees = filteredEmployees.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   return (
     <>
       <Navbar />
@@ -179,6 +202,7 @@ export default function ReportPage() {
             height: "calc(100vh - 68px)",
           }}
         >
+          {/* Search Section */}
           <Box sx={{ p: 2 }}>
             <Box
               sx={{
@@ -264,19 +288,22 @@ export default function ReportPage() {
                 </Button>
               </Box>
             </Box>
+          </Box>
 
-            {hasSearched && filteredEmployees.length === 0 && candidateName ? (
-              <Typography
-                variant="h6"
-                sx={{ mt: 4, textAlign: "center", color: "gray" }}
-              >
-                No matching candidates found for "{candidateName}".
-              </Typography>
-            ) : hasSearched && filteredEmployees.length === 0 ? (
-              <Typography variant="h6" sx={{ mt: 4, textAlign: "center" }}>
-                No attendance data found for the selected month and year.
-              </Typography>
-            ) : (
+          {/* Table Section */}
+          {hasSearched && filteredEmployees.length === 0 && candidateName ? (
+            <Typography
+              variant="h6"
+              sx={{ mt: 4, textAlign: "center", color: "gray" }}
+            >
+              No matching candidates found for "{candidateName}".
+            </Typography>
+          ) : hasSearched && filteredEmployees.length === 0 ? (
+            <Typography variant="h6" sx={{ mt: 4, textAlign: "center" }}>
+              No attendance data found for the selected month and year.
+            </Typography>
+          ) : (
+            <>
               <TableContainer
                 component={Paper}
                 sx={{ overflowX: "auto", maxHeight: "calc(100vh - 200px)" }}
@@ -308,7 +335,7 @@ export default function ReportPage() {
                   </TableHead>
 
                   <TableBody>
-                    {filteredEmployees.map((employee) => (
+                    {paginatedEmployees.map((employee) => (
                       <TableRow
                         key={employee.name}
                         sx={{
@@ -352,8 +379,54 @@ export default function ReportPage() {
                   </TableBody>
                 </Table>
               </TableContainer>
-            )}
-          </Box>
+
+              {/* Custom Pagination */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "end",
+                  alignItems: "center",
+                  mt: 2,
+                  px: 2,
+                }}
+              >
+                {/* Pagination Controls */}
+                <Box>
+                  <Typography variant="body2" component="span" sx={{ mr: 1 }}>
+                    Rows per page:
+                  </Typography>
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleRowsPerPageChange}
+                    sx={{ width: 60 }}
+                  >
+                    {[5, 10, 25].map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Button
+                    onClick={handlePrevPage}
+                    disabled={page === 0}
+                    sx={{ mr: 1 }}
+                  >
+                    <ArrowBackIos />
+                  </Button>
+                  <Typography variant="body2" component="span" sx={{ mx: 1 }}>
+                    Page {page + 1} of {totalPages}
+                  </Typography>
+                  <Button
+                    onClick={handleNextPage}
+                    disabled={page >= totalPages - 1}
+                    sx={{ ml: 1 }}
+                  >
+                    <ArrowForwardIos />
+                  </Button>
+                </Box>
+              </Box>
+            </>
+          )}
         </Box>
       </Box>
     </>

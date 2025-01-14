@@ -37,9 +37,9 @@ const debounce = (func, delay) => {
 
 export default function ReportPage() {
   const today = new Date();
-  const currentMonth = String(today.getMonth() + 1).padStart(2, "0"); // Get current month (01-based)
-  const currentYear = String(today.getFullYear()); // Get current year
-  const currentDay = today.getDate(); // Get today's date
+  const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+  const currentYear = String(today.getFullYear());
+  const currentDay = today.getDate();
 
   const [month, setMonth] = useState(currentMonth);
   const [year, setYear] = useState(currentYear);
@@ -108,7 +108,7 @@ export default function ReportPage() {
 
       const employeeMap = {};
       filteredAttendanceData.forEach((entry) => {
-        const [, , day] = entry.date.split("-").map(Number); // Extract day
+        const day = new Date(entry.date).getDate(); // Extract day from date
         entry.studentNames.forEach((name) => {
           if (!employeeMap[name]) {
             employeeMap[name] = Array(totalDaysInMonth).fill(0); // Initialize only up to totalDaysInMonth
@@ -129,12 +129,7 @@ export default function ReportPage() {
       // Store the unique days in the data
       const uniqueDays = [
         ...new Set(
-          filteredAttendanceData.map((entry) => {
-            const [entryYear, entryMonth, entryDay] = entry.date
-              .split("-")
-              .map(Number);
-            return entryDay;
-          })
+          filteredAttendanceData.map((entry) => new Date(entry.date).getDate())
         ),
       ];
 
@@ -194,7 +189,6 @@ export default function ReportPage() {
         <Box
           sx={{
             flexGrow: 1,
-            p: 3,
             maxWidth: 1420,
             margin: "0 auto",
             overflowX: "auto",
@@ -211,10 +205,11 @@ export default function ReportPage() {
                 justifyContent: "space-between",
                 flexWrap: "wrap",
                 gap: 2,
-                mb: 2,
+                mb: 1,
+                marginTop: "6px",
               }}
             >
-              <Typography variant="h4" sx={{ mb: 0, whiteSpace: "nowrap" }}>
+              <Typography variant="h5" sx={{ mb: 0, whiteSpace: "nowrap" }}>
                 Attendance Report
               </Typography>
               <Box
@@ -230,6 +225,7 @@ export default function ReportPage() {
                   placeholder="Enter Name"
                   value={candidateName}
                   onChange={(e) => setCandidateName(e.target.value)}
+                  size="small"
                   sx={{ minWidth: 200 }}
                   InputProps={{
                     endAdornment: candidateName && (
@@ -250,6 +246,7 @@ export default function ReportPage() {
                     value={month}
                     label="Select Month"
                     onChange={(e) => setMonth(e.target.value)}
+                    size="small"
                   >
                     {monthNames.map((m) => (
                       <MenuItem key={m.value} value={m.value}>
@@ -265,6 +262,7 @@ export default function ReportPage() {
                     value={year}
                     label="Select Year"
                     onChange={(e) => setYear(e.target.value)}
+                    size="small"
                   >
                     {[2023, 2024, 2025].map((yr) => (
                       <MenuItem key={yr} value={yr}>
@@ -277,11 +275,12 @@ export default function ReportPage() {
                 <Button
                   variant="contained"
                   onClick={() => fetchAttendance(month, year)}
+                  size="small"
                   sx={{
                     bgcolor: "rgb(134, 122, 233)",
                     "&:hover": { bgcolor: "rgb(95, 85, 190)" },
-                    minWidth: 200,
-                    height: 56,
+                    minWidth: 100,
+                    height: 38,
                   }}
                 >
                   Search
@@ -304,128 +303,131 @@ export default function ReportPage() {
             </Typography>
           ) : (
             <>
-              <TableContainer
-                component={Paper}
-                sx={{ overflowX: "auto", maxHeight: "calc(100vh - 200px)" }}
-              >
-                <Table stickyHeader sx={{ minWidth: 650 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          position: "sticky",
-                          left: 0,
-                          zIndex: 3,
-                          fontWeight: "bold",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Candidate Name
-                      </TableCell>
-                      {daysInData.map((day, index) => (
-                        <TableCell
-                          key={index}
-                          align="center"
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          {day}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
+            <TableContainer
+  component={Paper}
+  sx={{
+    overflowX: "auto",
+    maxHeight: "calc(100vh - 200px)",
+    borderBottom: "1px solid rgba(224, 224, 224, 1)",
+  }}
+>
+<Table stickyHeader sx={{ minWidth: 650 }} size="small">
+    <TableHead>
+      <TableRow>
+        <TableCell
+          sx={{
+            position: "sticky",
+            left: 0,
+            zIndex: 3,
+            fontWeight: "bold",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Candidate Name
+        </TableCell>
+        {daysInData.map((day, index) => (
+          <TableCell key={index} align="center" sx={{ fontWeight: "bold" }}>
+            {day}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
 
-                  <TableBody>
-                    {paginatedEmployees.map((employee) => (
-                      <TableRow
-                        key={employee.name}
-                        sx={{
-                          "&:nth-of-type(odd)": {
-                            bgcolor: "rgba(0, 0, 0, 0.02)",
-                          },
-                        }}
-                      >
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            position: "sticky",
-                            left: 0,
-                            backgroundColor: "white",
-                            zIndex: 1,
-                          }}
-                        >
-                          {employee.name}
-                        </TableCell>
-                        {daysInData.map((day) => {
-                          const attendanceIndex = employee.attendance.findIndex(
-                            (status, index) => index + 1 === day
-                          );
-                          const status =
-                            attendanceIndex !== -1
-                              ? employee.attendance[attendanceIndex]
-                              : 0;
-                          return (
-                            <TableCell key={day} align="center">
-                              {status === 1 ? (
-                                <CheckIcon sx={{ color: "green" }} />
-                              ) : (
-                                <CloseIcon sx={{ color: "red" }} />
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+    <TableBody>
+      {paginatedEmployees.map((employee) => (
+        <TableRow
+          key={employee.name}
+          sx={{
+            "&:nth-of-type(odd)": {
+              bgcolor: "rgba(0, 0, 0, 0.02)",
+            },
+          }}
+        >
+          <TableCell
+            component="th"
+            scope="row"
+            sx={{
+              position: "sticky",
+              left: 0,
+              backgroundColor: "white",
+              zIndex: 1,
+            }}
+          >
+            {employee.name
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")}
+          </TableCell>
+          {daysInData.map((day) => {
+            const status = employee.attendance[day - 1] || 0;
+            return (
+              <TableCell key={day} align="center">
+                {status === 1 ? (
+                  <CheckIcon sx={{ color: "green" }} />
+                ) : (
+                  <CloseIcon sx={{ color: "red" }} />
+                )}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
 
-              {/* Custom Pagination */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "end",
-                  alignItems: "center",
-                  mt: 2,
-                  px: 2,
-                }}
-              >
-                {/* Pagination Controls */}
-                <Box>
-                  <Typography variant="body2" component="span" sx={{ mr: 1 }}>
-                    Rows per page:
-                  </Typography>
-                  <Select
-                    value={rowsPerPage}
-                    onChange={handleRowsPerPageChange}
-                    size="small"
-                    sx={{ width: 70 }}
-                  >
-                    {[5, 10, 25].map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <Button
-                    onClick={handlePrevPage}
-                    disabled={page === 0}
-                    sx={{ mr: 1 }}
-                  >
-                    <ArrowBackIos />
-                  </Button>
-                  <Typography variant="body2" component="span" sx={{ mx: 1 }}>
-                    Page {page + 1} of {totalPages}
-                  </Typography>
-                  <Button
-                    onClick={handleNextPage}
-                    disabled={page >= totalPages - 1}
-                    sx={{ ml: 1 }}
-                  >
-                    <ArrowForwardIos />
-                  </Button>
-                </Box>
-              </Box>
+{/* Custom Pagination with integrated design */}
+<Box
+  sx={{
+    display: "flex",
+    justifyContent: "end",
+    alignItems: "center",
+    borderTop: "1px solid rgba(224, 224, 224, 1)",
+    px: 2,
+    py: 1,
+    backgroundColor: "#ffffff",
+  }}
+>
+  {/* Pagination Controls */}
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Typography variant="body2" component="span" sx={{ mr: 1 }}>
+      Rows per page:
+    </Typography>
+    <Select
+      value={rowsPerPage}
+      onChange={handleRowsPerPageChange}
+      size="small"
+      sx={{ width: 70 }}
+    >
+      {[5, 10, 25].map((option) => (
+        <MenuItem key={option} value={option}>
+          {option}
+        </MenuItem>
+      ))}
+    </Select>
+  </Box>
+  
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Button
+      onClick={handlePrevPage}
+      disabled={page === 0}
+      sx={{ mr: 1, minWidth: 35 }}
+    >
+      <ArrowBackIos />
+    </Button>
+    <Typography variant="body2" component="span" sx={{ mx: 1 }}>
+      Page {page + 1} of {totalPages}
+    </Typography>
+    <Button
+      onClick={handleNextPage}
+      disabled={page >= totalPages - 1}
+      sx={{ ml: 1, minWidth: 35 }}
+    >
+      <ArrowForwardIos />
+    </Button>
+  </Box>
+</Box>
+
             </>
           )}
         </Box>

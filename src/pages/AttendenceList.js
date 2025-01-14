@@ -41,6 +41,7 @@ import { DataGrid, GridSearchIcon } from "@mui/x-data-grid";
 import { ClearIcon } from "@mui/x-date-pickers";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 
 const StudentCard = ({ student }) => {
   const { Student_Name, Email, Mobile, Enrollment_Date, End_Date, _id } =
@@ -78,10 +79,12 @@ const StudentCard = ({ student }) => {
       <Box sx={{ mt: 2 }}>
         <QRCode
           value={JSON.stringify({
-            id: _id,
+            Id: _id,
             student: Student_Name,
-            enrollmentDate: Enrollment_Date,
-            endDate: End_Date,
+            Email: Email,
+            MobileNumber: Mobile,
+            enrollment_date: Enrollment_Date,
+            end_date: End_Date,
           })}
           size={128}
         />
@@ -102,8 +105,8 @@ const StudentsTable = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [allStudents, setAllStudents] = useState([]);
 
-  const [editingToken, setEditingToken] = useState(null); // Track which student is being edited
-  const [newTokenValue, setNewTokenValue] = useState(""); // Store the new token value
+  const [editingToken, setEditingToken] = useState(null);
+  const [newTokenValue, setNewTokenValue] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [invokeExport, setInvokeExport] = useState(null);
   const [newAdmissions, setNewAdmissions] = useState([]);
@@ -114,23 +117,18 @@ const StudentsTable = () => {
 
   const handleExport = () => {
     if (selectedStudent) {
-      setInvokeExport({ mobile: "9807631010" }); // Pass mobile to IDCard
+      setInvokeExport({ mobile: "9807631010" });
     } else {
       alert("Please select a student first.");
     }
   };
 
-  // React.useEffect(() => {
-  //   if (studentToExport) {
-  //     handleExport(studentToExport);
-  //   }
-  // }, [studentToExport]);
 
   const handleEditToken = (row) => {
     console.log("Editing Token for:", row);
     console.log("row id:", row.id);
-    setEditingToken(row.id); // Set the row ID to indicate it's in editing mode
-    setNewTokenValue(row.totalTokens); // Pre-fill the field with the current total tokens
+    setEditingToken(row.id);
+    setNewTokenValue(row.totalTokens);
   };
 
   const handleSaveToken = async () => {
@@ -165,7 +163,8 @@ const StudentsTable = () => {
         `${endpoints.serverBaseURL}/api/std/fetch-from-zoho`
       );
       console.log("Response from Zoho:", response.data);
-      const { newAdmissions } = response.data;
+      const { newAdmissions, newAdmissionsData } = response.data;
+      console.log("newAdmissions:", newAdmissionsData);
 
       if (newAdmissions > 0) {
         toast.success(
@@ -173,7 +172,7 @@ const StudentsTable = () => {
             newAdmissions > 1 ? "s" : ""
           } added successfully!`
         );
-        setNewAdmissions(students);
+        setNewAdmissions(newAdmissionsData);
       } else {
         toast.info("No new admissions found.");
       }
@@ -233,8 +232,15 @@ const StudentsTable = () => {
 
   // Handle rows per page change
   const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to first page when rows per page changes
+    const value = event?.target?.value;
+    if (value !== undefined) {
+      setRowsPerPage(parseInt(value, 10));
+      setPage(0);
+    } else {
+      console.error(
+        "Dropdown value is undefined. Check the dropdown implementation."
+      );
+    }
   };
 
   const formatDate = (date) => {
@@ -292,8 +298,7 @@ const StudentsTable = () => {
     roleCheck();
   }, []);
 
-  // Update search text in Redux (immediate)
-  const handleSearchChange = (e) => {
+    const handleSearchChange = (e) => {
     setFilterData({ ...filterData, searchValue: e.target.value });
   };
 
@@ -340,16 +345,14 @@ const StudentsTable = () => {
   const handleClick = (event, student) => {
     setAnchorEl(event.currentTarget);
     setSelectedStudent(student);
-    console.log("clicked", student)
   };
 
   const handleTokenValueChange = (event) => {
     const inputValue = event.target.value;
 
-    // Allow only numbers and limit the maximum value
-    const maxTokens = 9999; // Set your desired maximum value
+    const maxTokens = 9999;
     if (/^\d*$/.test(inputValue) && Number(inputValue) <= maxTokens) {
-      setNewTokenValue(inputValue); // Update state only if valid
+      setNewTokenValue(inputValue);
     }
   };
 
@@ -367,6 +370,15 @@ const StudentsTable = () => {
   };
 
   const columns = [
+    // {
+    //   field: "index",
+    //   headerName: "No",
+    //   flex: 0.5,
+    //   headerAlign: "center",
+    //   align: "center",
+    //   valueGetter: (params) => params.row.index,
+    //   sortable: false,
+    // },
     {
       field: "name",
       headerName: "Name",
@@ -611,9 +623,13 @@ const StudentsTable = () => {
     },
   ];
 
-  const rows = filteredStudents.map((student) => ({
+  const rows = filteredStudents.map((student, index) => ({
     id: student._id,
-    name: student.Student_Name,
+    index: index + 1,
+    name: student.Student_Name
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" "),
     email: student.Email,
     mobile: student.Mobile,
     courseName: student.Product_List?.join(", ") || "-",
@@ -624,88 +640,6 @@ const StudentsTable = () => {
     attendedTokens: student.redeemedTokens,
     totalTokens: student.totalTokens,
   }));
-
-  // const handleExport = async (student) => {
-  //   try {
-  //     // Dynamically create a div to hold the component for rendering
-  //     const tempDiv = document.createElement("div");
-  //     tempDiv.style.position = "absolute";
-  //     tempDiv.style.visibility = "hidden";
-  //     document.body.appendChild(tempDiv);
-
-  //     // Render the JSX element to the temporary div
-  //     import("react-dom").then(({ createRoot }) => {
-  //       const root = createRoot(tempDiv);
-  //       root.render(<StudentCard student={student} />);
-
-  //       // Add a slight delay to ensure rendering is complete
-  //       setTimeout(() => {
-  //         // Convert the rendered JSX to an image
-  //         toPng(tempDiv).then((imageUrl) => {
-  //           // Check if the image URL is valid
-  //           if (!imageUrl || !imageUrl.startsWith("data:image/png;base64,")) {
-  //             throw new Error("Invalid or empty Base64 image data.");
-  //           }
-
-  //           // Log the imageUrl to debug
-  //           console.log("Generated Image URL:", imageUrl);
-
-  //           // Create a FormData object
-  //           const formData = new FormData();
-
-  //           // Convert the Base64 image to a Blob (PNG format)
-  //           const byteCharacters = atob(imageUrl.split(',')[1]);
-  //           const byteArrays = [];
-
-  //           for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-  //             const slice = byteCharacters.slice(offset, offset + 512);
-  //             const byteNumbers = new Array(slice.length);
-  //             for (let i = 0; i < slice.length; i++) {
-  //               byteNumbers[i] = slice.charCodeAt(i);
-  //             }
-  //             byteArrays.push(new Uint8Array(byteNumbers));
-  //           }
-
-  //           // Create a Blob from the byte arrays
-  //           const imageBlob = new Blob(byteArrays, { type: 'image/png' });
-
-  //           // Append the image Blob to FormData
-  //           formData.append("image", imageBlob, "student-image.png");
-  //           formData.append("mobile", "9807631010"); // Add other fields if needed
-
-  //           // Send FormData to backend using axios
-  //           axios
-  //             .post(`${endpoints.serverBaseURL}/api/receive-image`, formData, {
-  //               headers: {
-  //                 "Content-Type": "multipart/form-data",
-  //               },
-  //             })
-  //             .then(() => {
-  //               alert("Image sent to backend successfully!");
-  //               document.body.removeChild(tempDiv); // Clean up the DOM after sending the image
-  //             })
-  //             .catch((error) => {
-  //               console.error("Error sending image to backend:", error);
-  //               alert("Failed to send image to backend.");
-  //             });
-  //         }).catch((error) => {
-  //           console.error("Error generating image from JSX:", error);
-  //           alert("Failed to capture image.");
-  //         });
-  //       }, 200); // Give some time for rendering (200ms delay, adjust as necessary)
-  //     });
-  //   } catch (error) {
-  //     console.error("Error capturing or rendering image:", error);
-  //   }
-  // };
-
-  //  const handleShareIdCard = () => {
-  //   if (idCardRef.current) {
-  //     idCardRef.current.handleExport("9807631010"); // Trigger handleExport with static mobile number
-  //   } else {
-  //     console.error("IDCard ref is not set.");
-  //   }
-  // };
 
   return (
     <Box
@@ -721,9 +655,10 @@ const StudentsTable = () => {
             flexGrow: 1,
             padding: 1,
             maxWidth: "none",
-            overflow: "auto", // Ensure content is scrollable
+            overflow: "auto",
             display: "flex",
             flexDirection: "column",
+            marginBottom: 2,
           }}
           maxWidth="none"
         >
@@ -735,7 +670,7 @@ const StudentsTable = () => {
               width: "100%",
               marginBottom: 2,
               marginTop: 3,
-              justifyContent: "flex-end", // Align elements to the right
+              justifyContent: "flex-end",
             }}
           >
             <Typography
@@ -745,7 +680,7 @@ const StudentsTable = () => {
                 wordBreak: "break-word",
                 minWidth: "250px",
                 marginBottom: 1,
-                flexGrow: 1, // Allow the title to take space on the left
+                flexGrow: 1,
               }}
             >
               Candidate Data
@@ -822,7 +757,20 @@ const StudentsTable = () => {
             </Box>
           </Box>
 
-          {/* <Divider sx={{ marginTop: 2, marginBottom: 2 }} /> */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            sx={{
+              "& .MuiPaper-root": {
+                boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.15)",
+              },
+            }}
+          >
+            <MenuItem onClick={() => handleMenuItemClick("showId")}>
+              Access Card
+            </MenuItem>
+          </Menu>
 
           <Box sx={{ height: 570, width: "100%", position: "relative" }}>
             {rows.length > 0 ? (
@@ -830,6 +778,16 @@ const StudentsTable = () => {
                 <DataGrid
                   rows={rows}
                   columns={columns}
+                  // columns={[
+                  //   {
+                  //     field: "index",
+                  //     headerName: "#",
+                  //     width: 50,
+                  //     sortable: false, // Optional: Disable sorting for the index column
+                  //     valueGetter: (params) => params.api.getRowIndexRelativeToVisibleRows(params.row.id) + 1,
+                  //   },
+                  //   ...columns, // Spread your existing columns
+                  // ]}
                   getRowId={(row) => row.id}
                   page={page}
                   pageSize={rowsPerPage}
@@ -854,23 +812,45 @@ const StudentsTable = () => {
                     display: "flex",
                     justifyContent: "end",
                     alignItems: "center",
+                    backgroundColor: "#ffffff",
+                    padding: "10px",
                   }}
                 >
-                  <IconButton
-                    onClick={() => handlePageChange(page - 1)}
-                    disabled={page === 0}
-                  >
-                    &lt;
-                  </IconButton>
-                  <Typography sx={{ margin: "0 10px" }}>
-                    Page {page + 1} of {Math.ceil(totalCount / rowsPerPage)}
-                  </Typography>
-                  <IconButton
-                    onClick={() => handlePageChange(page + 1)}
-                    disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
-                  >
-                    &gt;
-                  </IconButton>
+                  {/* Rows per page selector */}
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Typography>Rows per page:</Typography>
+                    <Select
+                      value={rowsPerPage}
+                      onChange={(event) => handleRowsPerPageChange(event)}
+                      sx={{ marginLeft: "10px", width: "70px", marginRight: "10px" }}
+                      size="small"
+                    >
+                      {[5, 10, 15, 25, 50].map((option) => (
+                        <MenuItem key={option} value={option}>
+                          {option}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+
+                  {/* Pagination controls */}
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <IconButton
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 0}
+                    >
+                     <ArrowBackIos />
+                    </IconButton>
+                    <Typography sx={{ margin: "0 10px" }}>
+                      Page {page + 1} of {Math.ceil(totalCount / rowsPerPage)}
+                    </Typography>
+                    <IconButton
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
+                    >
+                     <ArrowForwardIos />
+                    </IconButton>
+                  </Box>
                 </Box>
               </>
             ) : (
@@ -904,11 +884,11 @@ const StudentsTable = () => {
             >
               {selectedStudent && (
                 <IDCard
-                newAdmissions={newAdmissions}
+                  newAdmissions={newAdmissions}
                   handleCloseModal={handleCloseModal}
                   invokeExport={invokeExport}
                   onExportComplete={() => setInvokeExport(null)}
-                  student={selectedStudent}
+                  students={selectedStudent}
                 />
               )}
             </Box>

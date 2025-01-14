@@ -153,12 +153,43 @@ import endpoints from "../Endpoints/endpoint";
 import { Close, WhatsApp } from "@mui/icons-material";
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
-const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, newAdmissions }) => {
+const IDCard = ({ candidate,students, invokeExport, onExportComplete, handleCloseModal, newAdmissions }) => {
   const [isCardVisible, setIsCardVisible] = React.useState(true);
   const cardRef = useRef();
-  const { name, email, mobile, enrollmentDate, endDate, id } = student;
+  const {
+    name: studentNameFromStudents,
+    email: studentEmail,
+    mobile: studentMobile,
+    enrollmentDate: studentEnrollmentDate,
+    endDate: studentEndDate,
+    id: studentId,
+  } = students || {};
 
-  console.log("new Student Data:", newAdmissions);
+  const {
+    studentName: studentNameFromCandidate,
+    enrollmentDate: candidateEnrollmentDate,
+    endDate: candidateEndDate,
+    id: candidateId,
+  } = candidate || {};
+
+  // Use data from candidate or fallback to students
+  const name = studentNameFromCandidate || studentNameFromStudents;
+  const email = studentEmail || "";
+  const mobile = studentMobile || "";
+  const enrollment = candidateEnrollmentDate || studentEnrollmentDate;
+  const end = candidateEndDate || studentEndDate;
+  const id = candidateId || studentId;
+
+
+
+
+
+
+
+  // const { name, email, mobile, enrollmentDate, endDate, id } = students || {};
+  // console.log(students)
+  // const { student, Email, Mobile, enrollmentdate, enddate, Id } = candidate || {};
+  // console.log(candidate)
   const formatDate = (date) => {
     if (!date) return "";
     const options = { year: "numeric", month: "short", day: "numeric" };
@@ -216,7 +247,7 @@ const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, new
 
   return (
     <>
-    <IconButton
+    {!candidate && (<IconButton
       sx={{
         position: "absolute",
         top: 0,
@@ -230,7 +261,7 @@ const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, new
       onClick={handleCloseModal}
     >
       <Close />
-    </IconButton>
+    </IconButton>)}
     <Box>
       
       <Box
@@ -249,33 +280,37 @@ const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, new
           {name}
         </Typography>
         <Divider sx={{ my: 1 }} />
+        {email && (
+  <Typography variant="body2" color="textSecondary">
+    Email: {email}
+  </Typography>
+)}
+{mobile && (
+  <Typography variant="body2" color="textSecondary">
+    Mobile: {mobile}
+  </Typography>
+)}
         <Typography variant="body2" color="textSecondary">
-          Email: {email}
+          Enrollment Date: {formatDate(enrollment)}
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          Mobile: {mobile}
+          End Date: {formatDate(end)}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Enrollment Date: {formatDate(enrollmentDate)}
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          End Date: {formatDate(endDate)}
-        </Typography>
-        <Box sx={{ mt: 2 }}>
+        {!candidate &&(<Box sx={{ mt: 2 }}>
           <QRCode
             value={JSON.stringify({
               id: id,
-              student: name,
-              enrollmentDate: enrollmentDate,
-              endDate: endDate,
+              studentName: name,
+              enrollmentDate: enrollment,
+              endDate: end,
             })}
             size={128}
           />
-        </Box>
+        </Box>)}
       </Box>
       <Box display="flex" justifyContent="end" alignItems="center">
       {/* Other card content here */}
-      <Tooltip title="Share with WhatsApp" placement="top">
+      {!candidate && (<Tooltip title="Share with WhatsApp" placement="top">
         <IconButton
           variant="contained"
           sx={{
@@ -303,7 +338,7 @@ const IDCard = ({ student, invokeExport, onExportComplete, handleCloseModal, new
             Share
           </Typography>
         </IconButton>
-      </Tooltip>
+      </Tooltip>)}
     </Box>
     </Box>
     </>

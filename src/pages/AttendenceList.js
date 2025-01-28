@@ -63,6 +63,7 @@ const StudentsTable = () => {
   const [editingEndDate, setEditingEndDate] = useState(null);
   const [newEndDateValue, setNewEndDateValue] = useState("");
   let [rows, setRows] = useState([]);
+  const pages = 0;
 
   const idCardRef = useRef();
 
@@ -223,6 +224,55 @@ const StudentsTable = () => {
     }
   };
 
+  // Function to load data from sessionStorage
+  const loadData = () => {
+    const storedData = sessionStorage.getItem(`page-${pages}`);
+    if (storedData) {
+      const parsedData = JSON.parse(storedData);
+      setStudents(parsedData.students); // Update students state with the session data
+    }
+  };
+
+  useEffect(() => {
+    const handleCustomEvent = (e) => {
+      console.log("Custom event fired! Updated data:", e.detail.students);
+  
+      // Update the state with the updated student data
+      setStudents(e.detail.students);
+      setFilteredStudents(e.detail.students);
+      setRows(
+        e.detail.students.map((student, index) => ({
+          id: student.zoho_id,
+          index: index + 1,
+          name: student.Student_Name.split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" "),
+          email: student.Email,
+          mobile: student.Mobile,
+          branch: student.Branch || "-",
+          courseName: student.Course_Name1 || "-",
+          courseMode: student.Student_Type || "-",
+          enrollmentDate: formatDate(student.Enrollment_Date),
+          endDate: student.End_Date ? new Date(student.End_Date).toISOString().split("T")[0] : "",
+          formattedEndDate: student.End_Date ? formatDate(student.End_Date) : "N/A",
+          remainingTokens: student.totalTokens - student.redeemedTokens,
+          attendedTokens: student.redeemedTokens,
+          totalTokens: student.totalTokens,
+        }))
+      );
+    };
+  
+    // Listen for the custom event
+    window.addEventListener("updateStudentsData", handleCustomEvent);
+  
+    // Cleanup the event listener on unmount
+    return () => {
+      window.removeEventListener("updateStudentsData", handleCustomEvent);
+    };
+  }, []);
+  
+  
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -335,6 +385,12 @@ const StudentsTable = () => {
     loadData();
   }, [page]);
 
+ 
+  
+    //  if (loading) {
+    //   return <div>Loading...</div>;
+    // }
+  
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
@@ -467,6 +523,7 @@ const StudentsTable = () => {
         mobile: student.Mobile,
         courseName: student.Course_Name1 || "-",
         courseMode: student.Student_Type || "-",
+        branch: student.Branch || "-",
         enrollmentDate: formatDate(student.Enrollment_Date),
         endDate: student.End_Date
           ? new Date(student.End_Date).toISOString().split("T")[0] // Raw ISO date for input
@@ -514,6 +571,7 @@ const StudentsTable = () => {
         mobile: student.Mobile,
         courseName: student.Course_Name1 || "-",
         courseMode: student.Student_Type || "-",
+        branch: student.Branch || "-",
         enrollmentDate: formatDate(student.Enrollment_Date),
         endDate: student.End_Date
         ? new Date(student.End_Date).toISOString().split("T")[0]

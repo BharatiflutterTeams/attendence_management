@@ -82,31 +82,31 @@ export default function ScannerPage() {
 
   const handleScanSuccess = async (decodedText) => {
     try {
-      if (scanResult || scanError) return; // Prevent multiple scans
+      if (scanResult || scanError) return;
       console.log("Extracted data:", decodedText);
-      const qrData = JSON.parse(decodedText); // Parse JSON stringified QR data
+      const qrData = JSON.parse(decodedText);
       console.log("qr data:", qrData);
       setSelectedStudent(qrData);
       console.log("selected student:", selectedStudent);
       const today = new Date().toDateString();
-
+  
       // Check if the student is already marked
       if (markedStudents[qrData.student]) {
         setScanError(`Already scanned today for ${qrData.student}`);
         toast.error(`Already scanned today for ${qrData.student}`);
         return;
       }
-
+  
       // Check if the scan time is within the valid range
       const currentTime = new Date();
-      const scanTokenTime = new Date(qrData.scanTokenTime); // assuming this is the time from the backend
-
+      const scanTokenTime = new Date(qrData.scanTokenTime);
+  
       if (currentTime > scanTokenTime) {
         setScanError(`Scan token has expired. Cannot mark attendance.`);
         toast.error(`Scan token has expired. Cannot mark attendance.`);
         return;
       }
-
+  
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/scan/validate-qr`,
         {
@@ -114,8 +114,58 @@ export default function ScannerPage() {
           companyId: companyData?.id,
         }
       );
-
+  
       if (response.status === 200) {
+        const { studentId, redeemedTokens, availableTokens } = response.data;
+        let updatedStudents = [];
+  
+        // Loop through all pages in sessionStorage and update the data
+        for (let i = 0; sessionStorage.getItem(`page-${i}`); i++) {
+          const pageDataString = sessionStorage.getItem(`page-${i}`);
+          console.log(`page-${i} data:`, pageDataString);
+  
+          if (!pageDataString) continue; // Skip if no data exists
+  
+          let pageData;
+          try {
+            pageData = JSON.parse(pageDataString); // Parse the data
+          } catch (error) {
+            console.error(`Error parsing JSON for page-${i}:`, error.message);
+            continue; // Skip if parsing fails
+          }
+  
+          // Ensure pageData.students is an array
+          if (!pageData.students || !Array.isArray(pageData.students)) {
+            console.error(`Parsed data for page-${i} is not an array of students:`, pageData);
+            continue;
+          }
+  
+          // Update the relevant student data
+          updatedStudents = pageData.students.map((student) => {
+            if (student.zoho_id === studentId) {
+              return {
+                ...student,
+                redeemedTokens,
+                availableTokens,
+              };
+            }
+            return student;
+          });
+  
+          // Update the session storage with the updated students
+          pageData.students = updatedStudents;
+          sessionStorage.setItem(`page-${i}`, JSON.stringify(pageData)); // Save updated data
+        }
+  
+        // Dispatch storage event after updating sessionStorage
+        window.dispatchEvent(new Event('storage'));
+  
+        // Now trigger the custom event
+        const customEvent = new CustomEvent("updateStudentsData", {
+          detail: { students: updatedStudents }, // Send the updated data
+        });
+        window.dispatchEvent(customEvent);
+  
         setMarkedStudents((prev) => ({
           ...prev,
           [qrData.student]: today,
@@ -124,7 +174,6 @@ export default function ScannerPage() {
         setScanError(null);
         toast.success(`${qrData.studentName} marked Present`);
         setShowScanAgain(true);
-        // scannerRef.current.start(); // Restart the scanner
       } else {
         const message = response.data.message;
         if (message === "ATTENDANCE_ALREADY_MARKED") {
@@ -154,12 +203,14 @@ export default function ScannerPage() {
       setShowScanAgain(true);
     }
   };
+  
+  
 
   const handleScanAgain = () => {
   setScanResult(null);
   setScanError(null);
   setSelectedStudent(null);
-  setShowScanAgain(false); // Hide the "Scan Again" button
+  setShowScanAgain(false);
 
   // Ensure the scanner is properly cleared and re-rendered
   if (scannerRef.current) {
@@ -320,16 +371,6 @@ export default function ScannerPage() {
                 </Button>
               </Grid>
             )}
-
-            {/* <TablePagination
-    rowsPerPageOptions={[10, 25, 50]}
-    component="div"
-    count={students.length}
-    rowsPerPage={rowsPerPage}
-    page={page}
-    onPageChange={handleChangePage}
-    onRowsPerPageChange={handleChangeRowsPerPage}
-  /> */}
           </Grid>
         </Grid>
       </Container>

@@ -107,12 +107,12 @@ export default function Sidenav() {
   }, []);
 
   const menuItems = [
-    // {
-    //   label: "Dashboard",
-    //   icon: <DashboardIcon style={{ fill: "#867AE9" }} />,
-    //   path: "/",
-    //   visible: true,
-    // },
+    {
+      label: "Dashboard",
+      icon: <DashboardIcon style={{ fill: "#867AE9" }} />,
+      path: "/dashboard",
+      visible: true,
+    },
     {
       label: "Candidates",
       icon: <EventAvailableIcon style={{ fill: "#867AE9" }} />,

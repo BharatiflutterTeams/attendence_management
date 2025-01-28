@@ -8,6 +8,7 @@ import "react-calendar/dist/Calendar.css";
 import axios from "axios";
 import endpoints from "../Endpoints/endpoint";
 import { jwtDecode } from "jwt-decode";
+import RevenueCard from "./RevenueCard";
 
 const drawerWidth = 240;
 
@@ -149,34 +150,15 @@ function Home() {
           component="main"
           sx={{
             flexGrow: 1,
-            p: 3,
+            p: 8,
+
             width: { sm: `calc(100% - ${drawerWidth}px)` },
             height: "100vh",
           }}
         >
           <Toolbar />
-          <h1>
-            {" "}
-            {"👋"} {greeting}{" "}
-          </h1>
-          <h4>To access the dashboard get premium subscription</h4>
 
-          {/* Calendar Component */}
-
-          {/* <Box sx={{ marginTop: 3 }}>
-            {loading ? (
-              <p>Loading...</p>
-            ) : (
-              (roles.isSuperAdmin || roles.isAdmin) && (
-                <Calendar
-                  onChange={handleDateChange}
-                  value={date}
-                  tileContent={tileContent}
-                  onActiveStartDateChange={handleMonthChange}
-                />
-              )
-            )}
-          </Box> */}
+          <RevenueCard/>
         </Box>
       </Box>
     </>

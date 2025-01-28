@@ -11,6 +11,9 @@ import Badge from '@mui/material/Badge';
 import MenuItem from '@mui/material/MenuItem';
 import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import Link from '@mui/material/Link';
 
 import AccountCircle from '@mui/icons-material/AccountCircle';
 
@@ -222,15 +225,31 @@ const handleLogout=()=>{
        {/*******************support dialog *******************************************/}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{color:"white", background:'#867AE9'}}>Contact Support</DialogTitle>
-        <DialogContent sx={{mt:"1rem"}}>
-          <DialogContentText>
-            <h3>For assistance, contact us at:</h3>
-            <br />
-            Phone: <strong>9368303030</strong>
-            <br />
-            Email:<strong> support@bhartisofttech.com </strong>
-          </DialogContentText>
-        </DialogContent>
+
+<DialogContent sx={{ mt: "1rem" }}>
+  <DialogContentText>
+    <h3>For assistance, contact us at:</h3>
+    <br />
+    <Link
+      href="tel:9368303030"
+      sx={{ display: "flex", alignItems: "center", textDecoration: "none", mt: 1 }}
+      color="inherit"
+    >
+      <PhoneIcon sx={{ mr: 1 }} />
+      9368303030
+    </Link>
+    <br />
+    <Link
+      href="mailto:support@bhartisofttech.com"
+      sx={{ display: "flex", alignItems: "center", textDecoration: "none", mt: 1 }}
+      color="inherit"
+    >
+      <EmailIcon sx={{ mr: 1 }} />
+      support@bhartisofttech.com
+    </Link>
+  </DialogContentText>
+</DialogContent>;
+
         <DialogActions>
           <Button onClick={handleClose} color="primary">
             Close

@@ -63,6 +63,7 @@ const StudentsTable = () => {
   const [editingEndDate, setEditingEndDate] = useState(null);
   const [newEndDateValue, setNewEndDateValue] = useState("");
   let [rows, setRows] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const pages = 0;
 
   const idCardRef = useRef();
@@ -102,8 +103,8 @@ const StudentsTable = () => {
       if (response.status === 200) {
         toast.success("Token value updated successfully.");
   
-        // Retrieve the current page's data from sessionStorage
-        const storedData = JSON.parse(sessionStorage.getItem(`page-${page}`));
+        // Retrieve the full dataset from sessionStorage
+        const storedData = JSON.parse(sessionStorage.getItem("all-students"));
   
         if (storedData) {
           // Update the student data locally
@@ -115,13 +116,14 @@ const StudentsTable = () => {
   
           // Update sessionStorage with the new data
           sessionStorage.setItem(
-            `page-${page}`,
+            "all-students",
             JSON.stringify({ ...storedData, students: updatedStudents })
           );
   
           // Update React state with the new data
           setStudents(updatedStudents);
           setFilteredStudents(updatedStudents);
+  
           setRows(
             updatedStudents.map((student, index) => ({
               id: student.zoho_id,
@@ -157,8 +159,14 @@ const StudentsTable = () => {
       }
     } catch (error) {
       console.error("Failed to update token value:", error);
-      toast.error(error.response.data.message || "Failed to update token value.");
+      toast.error(error.response?.data?.message || "Failed to update token value.");
     }
+  };
+  
+  
+  const handleRefresh = () => {
+    sessionStorage.removeItem("all-students");
+    setRefreshTrigger(prev => prev + 1);
   };
   
 
@@ -276,114 +284,88 @@ const StudentsTable = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-
-      // Check if data for the current page is already in sessionStorage
-      const storedData = sessionStorage.getItem(`page-${page}`);
-      let data;
+  
+      // Check if data is already stored in sessionStorage
+      const storedData = sessionStorage.getItem("all-students");
+      let allData;
+  
       if (storedData) {
-        // If data is found in sessionStorage, load it into state
+        // Use the stored data if available
         const parsedData = JSON.parse(storedData);
-        setStudents(parsedData.students);
-        setFilteredStudents(parsedData.students);
+        allData = parsedData.students;
         setTotalCount(parsedData.totalCount);
-        data = parsedData.students;
-        console.log("Data from sessionStorage:", data);
-        setRows(
-          data.map((student, index) => ({
-            id: student.zoho_id,
-            index: index + 1,
-            name: student.Student_Name.split(" ")
-              .map(
-                (word) =>
-                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-              )
-              .join(" "),
-            email: student.Email,
-            mobile: student.Mobile,
-            branch: student.Branch || "-",  
-            courseName: student.Course_Name1 || "-",
-            courseMode: student.Student_Type || "-",
-            enrollmentDate: formatDate(student.Enrollment_Date),
-            endDate: student.End_Date
-              ? new Date(student.End_Date).toISOString().split("T")[0] // Raw ISO date for input
-              : "",
-            formattedEndDate: student.End_Date
-              ? formatDate(student.End_Date) // User-friendly date for display
-              : "N/A",
-            remainingTokens: student.totalTokens - student.redeemedTokens,
-            attendedTokens: student.redeemedTokens,
-            totalTokens: student.totalTokens,
-          }))
-        );
+        console.log("Data from sessionStorage:", allData);
       } else {
-        // If data is not in sessionStorage, fetch it
+        // Fetch all data from the server
         try {
           const response = await axios.get(
             `${endpoints.serverBaseURL}/api/std/get-students`,
-            { params: { page: page + 1, limit: rowsPerPage } }
+            { params: { limit: "all" } }
           );
-          console.log(response.data);
-
+          console.log("Fetched all students:", response.data);
+  
           const { students, totalCount } = response.data;
-
+  
           // Sort students by Enrollment_Date
           const sortedStudents = students.sort(
             (a, b) => new Date(b.Enrollment_Date) - new Date(a.Enrollment_Date)
           );
-
-          console.log("Sorted Students:", sortedStudents);
-
-          setStudents(sortedStudents);
-          setFilteredStudents(sortedStudents);
+  
+          allData = sortedStudents;
           setTotalCount(totalCount);
-          setRows(
-            sortedStudents.map((student, index) => ({
-              id: student.zoho_id,
-              index: index + 1,
-              name: student.Student_Name.split(" ")
-                .map(
-                  (word) =>
-                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                )
-                .join(" "),
-              email: student.Email,
-              mobile: student.Mobile,
-              branch: student.Branch || "-",
-              courseName: student.Course_Name1 || "-",
-              courseMode: student.Student_Type || "-",
-              enrollmentDate: formatDate(student.Enrollment_Date),
-              endDate: student.End_Date
-                ? new Date(student.End_Date).toISOString().split("T")[0] // Raw ISO date for input
-                : "",
-              formattedEndDate: student.End_Date
-                ? formatDate(student.End_Date) // User-friendly date for display
-                : "N/A",
-              remainingTokens: student.totalTokens - student.redeemedTokens,
-              attendedTokens: student.redeemedTokens,
-              totalTokens: student.totalTokens,
-            }))
-          );
-          data = sortedStudents;
-          // Store the fetched data in sessionStorage for future use
+  
+          // Store the full dataset in sessionStorage
           sessionStorage.setItem(
-            `page-${page}`,
+            "all-students",
             JSON.stringify({ students: sortedStudents, totalCount })
           );
-
-          // Store data for the first page
-          if (page === 0) setAllStudents(students);
         } catch (error) {
           console.error("Error fetching students data:", error);
-        } finally {
-          console.log("came in finally iwht data", data);
+          setLoading(false);
+          return;
         }
       }
-
+  
+      // Implement client-side pagination
+      const startIndex = page * rowsPerPage;
+      const endIndex = startIndex + rowsPerPage;
+      const paginatedData = allData.slice(startIndex, endIndex);
+  
+      setStudents(paginatedData);
+      setFilteredStudents(paginatedData);
+      setRows(
+        paginatedData.map((student, index) => ({
+          id: student.zoho_id,
+          index: startIndex + index + 1,
+          name: student.Student_Name.split(" ")
+            .map(
+              (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            )
+            .join(" "),
+          email: student.Email,
+          mobile: student.Mobile,
+          branch: student.Branch || "-",
+          courseName: student.Course_Name1 || "-",
+          courseMode: student.Student_Type || "-",
+          enrollmentDate: formatDate(student.Enrollment_Date),
+          endDate: student.End_Date
+            ? new Date(student.End_Date).toISOString().split("T")[0]
+            : "",
+          formattedEndDate: student.End_Date
+            ? formatDate(student.End_Date)
+            : "N/A",
+          remainingTokens: student.totalTokens - student.redeemedTokens,
+          attendedTokens: student.redeemedTokens,
+          totalTokens: student.totalTokens,
+        }))
+      );
+  
       setLoading(false);
     };
-
+  
     loadData();
-  }, [page]);
+  }, [page, rowsPerPage, refreshTrigger]);
+  
 
  
   
@@ -431,13 +413,6 @@ const StudentsTable = () => {
     });
   };
 
-  const calculateEndDate = (dateString) => {
-    if (!dateString) return "";
-    const enrollmentDate = new Date(dateString);
-    enrollmentDate.setMonth(enrollmentDate.getMonth() + 3);
-    return enrollmentDate;
-  };
-
   const handleOpenModal = (student) => {
     setSelectedStudent(student);
     setModalOpen(true);
@@ -482,15 +457,8 @@ const StudentsTable = () => {
     setFilterData({ ...filterData, searchValue });
   
     // Retrieve all data from sessionStorage
-    const allPagesData = [];
-    Object.keys(sessionStorage).forEach((key) => {
-      if (key.startsWith("page-")) {
-        const pageData = JSON.parse(sessionStorage.getItem(key));
-        if (pageData && pageData.students) {
-          allPagesData.push(...pageData.students);
-        }
-      }
-    });
+  const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+  const allPagesData = storedData ? storedData.students : [];
   
     // Map the search key to the appropriate field name in the data
     const searchKeyMap = {
@@ -544,15 +512,8 @@ const StudentsTable = () => {
     setFilterData({ ...filterData, searchValue: defaultSearchValue });
 
     // Retrieve all data from sessionStorage
-    const allPagesData = [];
-    Object.keys(sessionStorage).forEach((key) => {
-      if (key.startsWith("page-")) {
-        const pageData = JSON.parse(sessionStorage.getItem(key));
-        if (pageData && pageData.students) {
-          allPagesData.push(...pageData.students);
-        }
-      }
-    });
+  const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+  const allPagesData = storedData ? storedData.students : [];
 
     // Reset the filtered students to the full data
     setFilteredStudents(allPagesData);
@@ -683,7 +644,7 @@ const StudentsTable = () => {
         toast.success("End date updated successfully.");
 
         // Retrieve current page's data from sessionStorage
-        const storedData = JSON.parse(sessionStorage.getItem(`page-${page}`));
+        const storedData = JSON.parse(sessionStorage.getItem("all-students"));
 
         if (storedData) {
           // Update the student's end date locally
@@ -1199,7 +1160,7 @@ const StudentsTable = () => {
               <Tooltip title="Refresh Data">
                 <IconButton
                   size="medium"
-                  onClick={fetchZohoStudents}
+                  onClick={handleRefresh}
                   disabled={loading}
                   sx={{
                     backgroundColor: loading ? "grey.300" : "#867ae9",

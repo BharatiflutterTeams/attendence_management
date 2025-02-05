@@ -97,14 +97,14 @@ const App = () => {
 
         <Route
           path="/"
-          element={roles.isChecker ? <Navigate to="/scanner" /> : <Home />}
+          element={roles.isChecker ? <Navigate to="/scanner" /> : <Attendence />}
         />
        
 
-        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Home />} />
 
         <Route path="/bookings" element={<BookingList />} />
-        <Route path="/attendence" element={<Attendence />} />
+        <Route path="/" element={<Attendence />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/coupons" element={<CouponsPage />} />
         <Route path="/profile" element={<ProfilePage />} />

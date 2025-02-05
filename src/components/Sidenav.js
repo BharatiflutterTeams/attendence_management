@@ -110,13 +110,13 @@ export default function Sidenav() {
     {
       label: "Dashboard",
       icon: <DashboardIcon style={{ fill: "#867AE9" }} />,
-      path: "/",
+      path: "/dashboard",
       visible: true,
     },
     {
       label: "Candidates",
       icon: <EventAvailableIcon style={{ fill: "#867AE9" }} />,
-      path: "/attendence",
+      path: "/",
       visible: true,
     },
     {

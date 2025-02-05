@@ -43,63 +43,13 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 
-const StudentCard = ({ student }) => {
-  const { Student_Name, Email, Mobile, Enrollment_Date, End_Date, _id } =
-    student;
-  console.log("Student:", student);
-
-  return (
-    <Box
-      sx={{
-        border: "1px solid #ddd",
-        borderRadius: 2,
-        padding: 2,
-        width: 300,
-        textAlign: "center",
-        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-        backgroundColor: "white",
-      }}
-    >
-      <Typography variant="h6" gutterBottom>
-        {Student_Name}
-      </Typography>
-      <Divider sx={{ my: 1 }} />
-      <Typography variant="body2" color="textSecondary">
-        Email: {Email}
-      </Typography>
-      <Typography variant="body2" color="textSecondary">
-        Mobile: {Mobile}
-      </Typography>
-      <Typography variant="body2" color="textSecondary">
-        Enrollment Date: {Enrollment_Date}
-      </Typography>
-      <Typography variant="body2" color="textSecondary">
-        End Date: {End_Date}
-      </Typography>
-      <Box sx={{ mt: 2 }}>
-        <QRCode
-          value={JSON.stringify({
-            Id: _id,
-            student: Student_Name,
-            Email: Email,
-            MobileNumber: Mobile,
-            enrollment_date: Enrollment_Date,
-            end_date: End_Date,
-          })}
-          size={128}
-        />
-      </Box>
-    </Box>
-  );
-};
-
 const StudentsTable = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -110,6 +60,11 @@ const StudentsTable = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [invokeExport, setInvokeExport] = useState(null);
   const [newAdmissions, setNewAdmissions] = useState([]);
+  const [editingEndDate, setEditingEndDate] = useState(null);
+  const [newEndDateValue, setNewEndDateValue] = useState("");
+  let [rows, setRows] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const pages = 0;
 
   const idCardRef = useRef();
 
@@ -123,7 +78,6 @@ const StudentsTable = () => {
     }
   };
 
-
   const handleEditToken = (row) => {
     console.log("Editing Token for:", row);
     console.log("row id:", row.id);
@@ -132,28 +86,117 @@ const StudentsTable = () => {
   };
 
   const handleSaveToken = async () => {
-    if (newTokenValue !== "") {
-      try {
-        const response = await axios.post(
-          `${endpoints.serverBaseURL}/api/std/change-token`,
-          {
-            studentId: editingToken,
-            totalTokens: newTokenValue,
-          }
+    if (newTokenValue === "") {
+      toast.error("Please enter a valid token value.");
+      return;
+    }
+
+    // Parse newTokenValue to a number
+    const updatedTotalTokens = Number(newTokenValue);
+    if (isNaN(updatedTotalTokens)) {
+      toast.error("Invalid token value. Please enter a number.");
+      return;
+    }
+
+    // Retrieve student data from sessionStorage
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+
+    if (!storedData) {
+      toast.error("Student data not found.");
+      return;
+    }
+
+    const currentStudent = storedData.students.find(
+      (student) => student.zoho_id === editingToken
+    );
+
+    if (!currentStudent) {
+      toast.error("Student not found.");
+      return;
+    }
+
+    // Validate: Total Tokens should NOT be less than Redeemed Tokens
+    if (updatedTotalTokens < currentStudent.redeemedTokens) {
+      toast.error("Total tokens cannot be less than redeemed tokens.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${endpoints.serverBaseURL}/api/std/change-token`,
+        {
+          studentId: editingToken,
+          totalTokens: updatedTotalTokens,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Token value updated successfully.");
+
+        // Update student data locally
+        const updatedStudents = storedData.students.map((student) =>
+          student.zoho_id === editingToken
+            ? { ...student, totalTokens: updatedTotalTokens }
+            : student
         );
 
-        if (response.status === 200) {
-          toast.success("Token value updated successfully.");
-          fetchData(); // Refresh data after update
-          setEditingToken(null); // Reset editing state
-          setNewTokenValue(""); // Reset token value
-        }
-      } catch (error) {
-        toast.error("Failed to update token value.");
+        // Update sessionStorage with new data
+        sessionStorage.setItem(
+          "all-students",
+          JSON.stringify({ ...storedData, students: updatedStudents })
+        );
+
+        // Update React state
+        setStudents(updatedStudents);
+        setFilteredStudents(updatedStudents);
+
+        setRows(
+          updatedStudents.map((student, index) => ({
+            id: student.zoho_id,
+            index: index + 1,
+            name: student.Student_Name.split(" ")
+              .map(
+                (word) =>
+                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+              )
+              .join(" "),
+            email: student.Email,
+            mobile: student.Mobile
+              ? student.Mobile.startsWith("+91")
+                ? student.Mobile
+                : `+91${student.Mobile}`
+              : "-",
+            branch: student.Branch || "-",
+            courseName: student.Course_Name1 || "-",
+            courseMode: student.Student_Type || "-",
+            enrollmentDate: formatDate(student.Enrollment_Date),
+            endDate: student.End_Date
+              ? new Date(student.End_Date).toISOString().split("T")[0]
+              : "",
+            formattedEndDate: student.End_Date
+              ? formatDate(student.End_Date)
+              : "N/A",
+            remainingTokens: student.totalTokens - student.redeemedTokens,
+            attendedTokens: student.redeemedTokens,
+            totalTokens: student.totalTokens,
+          }))
+        );
+
+        // Reset editing state
+        setEditingToken(null);
+        setNewTokenValue("");
       }
-    } else {
-      toast.error("Please enter a valid token value.");
+    } catch (error) {
+      console.error("Failed to update token value:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update token value."
+      );
     }
+  };
+
+  const handleRefresh = () => {
+    sessionStorage.removeItem("all-students");
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const fetchZohoStudents = async () => {
@@ -177,7 +220,8 @@ const StudentsTable = () => {
         toast.info("No new admissions found.");
       }
 
-      fetchData();
+      // Only call fetchData if necessary
+      await fetchData();
     } catch (error) {
       console.error("Error fetching students from Zoho:", error);
       toast.error("Failed to fetch students from Zoho.");
@@ -187,28 +231,155 @@ const StudentsTable = () => {
   };
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const response = await axios.get(
         `${endpoints.serverBaseURL}/api/std/get-students`,
         { params: { page: page + 1, limit: rowsPerPage } }
       );
+      console.log(response.data);
 
       const { students, totalCount } = response.data;
       const sortedStudents = students.sort(
         (a, b) => new Date(b.Enrollment_Date) - new Date(a.Enrollment_Date)
       );
 
+      console.log("Sorted Students:", sortedStudents);
+
+      // Store the fetched data in sessionStorage for future use
+      sessionStorage.setItem(
+        `page-${page}`,
+        JSON.stringify({ students: sortedStudents, totalCount })
+      );
+
       setStudents(sortedStudents);
       setFilteredStudents(sortedStudents);
       setTotalCount(totalCount);
+
       if (page === 0) setAllStudents(students);
     } catch (error) {
       console.error("Error fetching students data:", error);
-    } finally {
-      setLoading(false);
     }
   };
+
+  // Function to load data from sessionStorage
+  const loadData = () => {
+    const storedData = sessionStorage.getItem(`page-${pages}`);
+    if (storedData) {
+      const parsedData = JSON.parse(storedData);
+      setStudents(parsedData.students);
+    }
+  };
+
+  const formatMobileNumber = (mobile) => {
+    if (!mobile) return "-"; // Handle missing numbers
+  
+    // Remove spaces and unwanted characters
+    mobile = mobile.trim();
+  
+    // If the number starts with "91" but without "+", convert to "+91"
+    if (/^91\d{10}$/.test(mobile)) {
+      return `+91${mobile.slice(2)}`;
+    }
+  
+    // If the number starts with "+91" and has 10 digits, return as is
+    if (/^\+91\d{10}$/.test(mobile)) {
+      return mobile;
+    }
+  
+    // If the number has exactly 10 digits, prepend "+91"
+    if (/^\d{10}$/.test(mobile)) {
+      return `+91${mobile}`;
+    }
+  
+    // Return the original value if it doesn't fit expected formats
+    return mobile;
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+
+      // Check if data is already stored in sessionStorage
+      const storedData = sessionStorage.getItem("all-students");
+      let allData;
+
+      if (storedData) {
+        // Use the stored data if available
+        const parsedData = JSON.parse(storedData);
+        allData = parsedData.students;
+        setTotalCount(parsedData.totalCount);
+      } else {
+        // Fetch all data from the server
+        try {
+          const response = await axios.get(
+            `${endpoints.serverBaseURL}/api/std/get-students`,
+            { params: { limit: "all" } }
+          );
+          console.log("Fetched all students:", response.data);
+
+          const { students, totalCount } = response.data;
+
+          // Sort students by Enrollment_Date
+          const sortedStudents = students.sort(
+            (a, b) => new Date(b.Enrollment_Date) - new Date(a.Enrollment_Date)
+          );
+
+          allData = sortedStudents;
+          setTotalCount(totalCount);
+
+          // Store the full dataset in sessionStorage
+          sessionStorage.setItem(
+            "all-students",
+            JSON.stringify({ students: sortedStudents, totalCount })
+          );
+        } catch (error) {
+          console.error("Error fetching students data:", error);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Implement client-side pagination
+      const startIndex = page * rowsPerPage;
+      const endIndex = startIndex + rowsPerPage;
+      const paginatedData = allData.slice(startIndex, endIndex);
+
+      setStudents(paginatedData);
+      setFilteredStudents(paginatedData);
+      setRows(
+        paginatedData.map((student, index) => ({
+          id: student.zoho_id,
+          index: startIndex + index + 1,
+          name: student.Student_Name.split(" ")
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            )
+            .join(" "),
+          email: student.Email,
+          mobile: formatMobileNumber(student.Mobile),
+          branch: student.Branch || "-",
+          courseName: student.Course_Name1 || "-",
+          courseMode: student.Student_Type || "-",
+          enrollmentDate: formatDate(student.Enrollment_Date),
+          endDate: student.End_Date
+            ? new Date(student.End_Date).toISOString().split("T")[0]
+            : "",
+          formattedEndDate: student.End_Date
+            ? formatDate(student.End_Date)
+            : "N/A",
+          remainingTokens: student.availableTokens,
+          attendedTokens: student.redeemedTokens,
+          totalTokens: student.totalTokens,
+        }))
+      );
+
+      setLoading(false);
+    };
+
+    loadData();
+  }, [page, rowsPerPage, refreshTrigger]);
+
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
@@ -222,9 +393,6 @@ const StudentsTable = () => {
 
     setFilteredStudents(filtered);
   };
-  useEffect(() => {
-    fetchData();
-  }, [page, rowsPerPage]);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -252,13 +420,6 @@ const StudentsTable = () => {
     });
   };
 
-  const calculateEndDate = (dateString) => {
-    if (!dateString) return "";
-    const enrollmentDate = new Date(dateString);
-    enrollmentDate.setMonth(enrollmentDate.getMonth() + 3);
-    return enrollmentDate;
-  };
-
   const handleOpenModal = (student) => {
     setSelectedStudent(student);
     setModalOpen(true);
@@ -274,7 +435,7 @@ const StudentsTable = () => {
   const defaultSearchValue = "";
 
   const [filterData, setFilterData] = useState({
-    searchKeys: ["name", "mobile", "email"],
+    searchKeys: ["name", "mobile", "email", "branch"],
     searchOnKey: "name",
     searchValue: defaultSearchValue,
   });
@@ -298,44 +459,104 @@ const StudentsTable = () => {
     roleCheck();
   }, []);
 
-    const handleSearchChange = (e) => {
-    setFilterData({ ...filterData, searchValue: e.target.value });
+  const handleSearchChange = (e) => {
+    const searchValue = e.target.value.toLowerCase();
+    setFilterData({ ...filterData, searchValue });
+
+    // Retrieve all data from sessionStorage
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+    const allPagesData = storedData ? storedData.students : [];
+
+    // Map the search key to the appropriate field name in the data
+    const searchKeyMap = {
+      name: "Student_Name",
+      mobile: "Mobile",
+      email: "Email",
+      branch: "Branch",
+    };
+    const searchKey = searchKeyMap[filterData.searchOnKey];
+
+    // Filter the students based on the search value
+    const filteredStudents = searchValue
+      ? allPagesData.filter((student) => {
+          const fieldValue = student[searchKey]?.toLowerCase().trim() || "";
+          return fieldValue.includes(searchValue);
+        })
+      : allPagesData;
+
+    // Update the filtered students in the state
+    setFilteredStudents(filteredStudents);
+    setRows(
+      filteredStudents.map((student, index) => ({
+        id: student.zoho_id,
+        index: index + 1,
+        name: student.Student_Name.split(" ")
+          .map(
+            (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          )
+          .join(" "),
+        email: student.Email,
+        mobile: formatMobileNumber(student.Mobile),
+        courseName: student.Course_Name1 || "-",
+        courseMode: student.Student_Type || "-",
+        branch: student.Branch || "-",
+        enrollmentDate: formatDate(student.Enrollment_Date),
+        endDate: student.End_Date
+          ? new Date(student.End_Date).toISOString().split("T")[0]
+          : "",
+        formattedEndDate: student.End_Date
+          ? formatDate(student.End_Date)
+          : "N/A",
+        remainingTokens: student.availableTokens,
+        attendedTokens: student.redeemedTokens,
+        totalTokens: student.totalTokens,
+      }))
+    );
   };
 
   const handleClearSearch = () => {
+    // Reset search value
     setFilterData({ ...filterData, searchValue: defaultSearchValue });
-    setFilteredStudents(allStudents);
+
+    // Retrieve all data from sessionStorage
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+    const allPagesData = storedData ? storedData.students : [];
+
+    // Reset the filtered students to the full data
+    setFilteredStudents(allPagesData);
+
+    // Update rows with the full data
+    setRows(
+      allPagesData.map((student, index) => ({
+        id: student.zoho_id,
+        index: index + 1,
+        name: student.Student_Name.split(" ")
+          .map(
+            (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          )
+          .join(" "),
+        email: student.Email,
+        mobile: formatMobileNumber(student.Mobile),
+        courseName: student.Course_Name1 || "-",
+        courseMode: student.Student_Type || "-",
+        branch: student.Branch || "-",
+        enrollmentDate: formatDate(student.Enrollment_Date),
+        endDate: student.End_Date
+          ? new Date(student.End_Date).toISOString().split("T")[0]
+          : "",
+        formattedEndDate: student.End_Date
+          ? formatDate(student.End_Date)
+          : "N/A",
+        remainingTokens: student.availableTokens,
+        attendedTokens: student.redeemedTokens,
+        totalTokens: student.totalTokens,
+      }))
+    );
   };
 
   const handleSearchKeyChange = (e) => {
     setFilterData({ ...filterData, searchOnKey: e.target.value });
   };
-
-  async function fetchStudent() {
-    try {
-      let searchKey = "";
-      if (filterData.searchOnKey === "name") {
-        searchKey = `${filterData.searchOnKey}`.replace("name", "Student_Name");
-      } else if (filterData.searchOnKey === "mobile") {
-        searchKey = `${filterData.searchOnKey}`.replace("mobile", "Mobile");
-      } else if (filterData.searchOnKey === "email") {
-        searchKey = `${filterData.searchOnKey}`.replace("email", "Email");
-      }
-      const res = await axios.get(
-        `${endpoints.serverBaseURL}/api/std/search-students`,
-        {
-          params: { searchKey: searchKey, searchValue: filterData.searchValue },
-        }
-      );
-      setFilteredStudents(res.data.data);
-    } catch (e) {}
-  }
-  useEffect(() => {
-    if (debouncedSearchTerm) {
-      fetchStudent();
-    }
-    setFilteredStudents(allStudents);
-  }, [debouncedSearchTerm, allStudents]);
 
   const handleCancelEdit = () => {
     setEditingToken(null);
@@ -350,7 +571,7 @@ const StudentsTable = () => {
   const handleTokenValueChange = (event) => {
     const inputValue = event.target.value;
 
-    const maxTokens = 9999;
+    const maxTokens = 99;
     if (/^\d*$/.test(inputValue) && Number(inputValue) <= maxTokens) {
       setNewTokenValue(inputValue);
     }
@@ -369,6 +590,96 @@ const StudentsTable = () => {
     handleClose();
   };
 
+  const handleEditEndDate = (row) => {
+    setEditingEndDate(row.id);
+    setNewEndDateValue(row.endDate || "");
+  };
+
+  const handleEndDateChange = (event) => {
+    setNewEndDateValue(event.target.value);
+  };
+
+  const handleCancelEndDateEdit = () => {
+    setEditingEndDate(null);
+    setNewEndDateValue("");
+  };
+
+  const handleSaveEndDate = async (rowId, newEndDate) => {
+    try {
+      if (!newEndDate) {
+        toast.error("Please provide a valid end date.");
+        return;
+      }
+
+      const response = await axios.post(
+        `${endpoints.serverBaseURL}/api/std/change-endDate`,
+        {
+          studentId: rowId,
+          endDate: newEndDate,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("End date updated successfully.");
+
+        const updatedStudent = response.data.student;
+
+        const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+
+        if (storedData) {
+          const updatedStudents = storedData.students.map((student) =>
+            student.zoho_id === rowId
+              ? { ...student, End_Date: updatedStudent.endDate }
+              : student
+          );
+
+          sessionStorage.setItem(
+            "all-students",
+            JSON.stringify({ ...storedData, students: updatedStudents })
+          );
+
+          setStudents(updatedStudents);
+          setFilteredStudents(updatedStudents);
+          setRows(
+            updatedStudents.map((student, index) => ({
+              id: student.zoho_id,
+              index: index + 1,
+              name: student.Student_Name.split(" ")
+                .map(
+                  (word) =>
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                )
+                .join(" "),
+              email: student.Email,
+              mobile: formatMobileNumber(student.Mobile),
+              courseName: student.Course_Name1 || "-",
+              courseMode: student.Student_Type || "-",
+              branch: student.Branch || "-",
+              enrollmentDate: formatDate(student.Enrollment_Date),
+              endDate: student.End_Date
+                ? new Date(student.End_Date).toISOString().split("T")[0]
+                : "",
+              formattedEndDate: student.End_Date
+                ? formatDate(student.End_Date)
+                : "N/A",
+              remainingTokens: student.availableTokens,
+              attendedTokens: student.redeemedTokens,
+              totalTokens: student.totalTokens,
+            }))
+          );
+        }
+
+        setEditingEndDate(null);
+        setNewEndDateValue("");
+      }
+    } catch (error) {
+      console.error("Failed to update end date:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to update end date.";
+      toast.error(errorMessage);
+    }
+  };
+
   const columns = [
     // {
     //   field: "index",
@@ -382,37 +693,44 @@ const StudentsTable = () => {
     {
       field: "name",
       headerName: "Name",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
+      flex: 1.5,
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "email",
       headerName: "Email",
-      flex: 1,
-      headerAlign: "center",
-      align: "center",
+      flex: 1.3,
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "mobile",
       headerName: "Mobile",
       flex: 1,
       headerAlign: "center",
-      align: "center",
+      align: "right",
     },
     {
       field: "courseName",
       headerName: "Course Name",
       flex: 2,
       headerAlign: "center",
-      align: "center",
+      align: "start",
     },
     {
       field: "courseMode",
       headerName: "Course Mode",
       flex: 1,
       headerAlign: "center",
-      align: "center",
+      align: "start",
+    },
+    {
+      field: "branch",
+      headerName: "Branch",
+      flex: 1,
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "enrollmentDate",
@@ -424,26 +742,111 @@ const StudentsTable = () => {
     {
       field: "endDate",
       headerName: "End Date",
-      flex: 1,
+      flex: 1.6,
       headerAlign: "center",
       align: "center",
+      renderCell: (params) => {
+        const isEditing = editingEndDate === params.row.id;
+
+        return isEditing ? (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            {/* Editable End Date Input */}
+            <TextField
+              value={newEndDateValue || params.row.formattedEndDate || ""}
+              onChange={handleEndDateChange}
+              size="small"
+              type="date"
+              sx={{
+                width: "195px",
+                ".MuiInputBase-input": { textAlign: "center" },
+              }}
+              inputProps={{
+                max: "9999-12-31",
+              }}
+            />
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={() =>
+                  handleSaveEndDate(params.row.id, newEndDateValue)
+                }
+              >
+                <CheckIcon />
+              </IconButton>
+              <IconButton
+                color="secondary"
+                size="small"
+                onClick={handleCancelEndDateEdit}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              position: "relative",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingTop: "10px",
+              "&:hover": {
+                "& button": {
+                  visibility: "visible",
+                },
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "13px",
+                textAlign: "center",
+              }}
+            >
+              {params.row.formattedEndDate}
+            </Typography>
+            {roles.isSuperAdmin && (
+              <Tooltip title="Edit End Date">
+                <IconButton
+                  size="small"
+                  onClick={() => handleEditEndDate(params.row)}
+                  sx={{
+                    visibility: "hidden",
+                    position: "absolute",
+                    right: 1,
+                    // paddingRight: "14px",
+                  }}
+                >
+                  <EditIcon sx={{ fontSize: "16px" }} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        );
+      },
     },
     {
       field: "tokens",
       headerName: "Tokens",
-      flex: 2,
+      flex: 2.3,
       renderHeader: () => (
         <Box>
           <Typography
             sx={{
               textAlign: "center",
-              // fontWeight: 'bold',
               fontSize: "14px",
               mb: 1,
               textTransform: "uppercase",
             }}
           >
-            Tokens
+            Access Days
           </Typography>
           <Box
             sx={{
@@ -453,53 +856,49 @@ const StudentsTable = () => {
               gap: 1,
             }}
           >
-            {/* Tokens Display Heading */}
+            {/* Updated Tokens Display Heading */}
             <Typography
               sx={{
                 width: "33%",
                 textAlign: "center",
-                // fontWeight: 'bold',
+                fontSize: "13px",
+              }}
+            >
+              Total
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                borderColor: "black",
+                borderWidth: "1px",
+              }}
+            />
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "center",
+                fontSize: "13px",
+              }}
+            >
+              Attended
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                borderColor: "black",
+                borderWidth: "1px",
+              }}
+            />
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "center",
                 fontSize: "13px",
               }}
             >
               Available
-            </Typography>
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                borderColor: "black",
-                borderWidth: "1px",
-              }}
-            />
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "center",
-                // fontWeight: 'bold',
-                fontSize: "13px",
-              }}
-            >
-              Redeemed
-            </Typography>
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                borderColor: "black",
-                borderWidth: "1px",
-              }}
-            />
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "end",
-                // fontWeight: 'bold',
-                fontSize: "13px",
-                paddingLeft: "8px",
-              }}
-            >
-              Total
             </Typography>
           </Box>
         </Box>
@@ -554,59 +953,68 @@ const StudentsTable = () => {
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center", // Adjusted to align content in the middle
-              paddingTop: "10px",
+              alignItems: "center",
+              paddingTop: "12px",
             }}
           >
-            {/* Tokens Display */}
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "center",
-                fontSize: "13px",
-              }}
-            >
-              {params.row.remainingTokens}
-            </Typography>
-            <Typography
-              sx={{
-                width: "23%",
-                textAlign: "center",
-                fontSize: "13px",
-              }}
-            >
-              {params.row.attendedTokens}
-            </Typography>
+            {/* Updated Tokens Display */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 gap: 0.5,
-                width: "43%",
+                width: "33%",
                 justifyContent: "center",
-                // paddingLeft: "15px",
+                position: "relative",
+                ":hover .edit-icon": {
+                  visibility: "visible",
+                },
               }}
             >
               <Typography
                 sx={{
                   fontSize: "13px",
-                  // paddingLeft: "15px",
+                  textAlign: "center",
                 }}
               >
                 {params.row.totalTokens}
               </Typography>
-              {/* Edit Icon for Super Admin */}
+              {/* Edit Icon for Super Admin next to Total */}
               {roles.isSuperAdmin && (
                 <Tooltip title="Edit Token">
                   <IconButton
                     size="small"
                     onClick={() => handleEditToken(params.row)}
+                    className="edit-icon"
+                    sx={{
+                      fontSize: "16px",
+                      visibility: "hidden",
+                    }}
                   >
                     <EditIcon sx={{ fontSize: "16px" }} />
                   </IconButton>
                 </Tooltip>
               )}
             </Box>
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "start",
+                fontSize: "13px",
+              }}
+            >
+              {params.row.attendedTokens}
+            </Typography>
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "start",
+                fontSize: "13px",
+                marginRight: "3px",
+              }}
+            >
+              {params.row.remainingTokens}
+            </Typography>
           </Box>
         );
       },
@@ -623,24 +1031,6 @@ const StudentsTable = () => {
     },
   ];
 
-  const rows = filteredStudents.map((student, index) => ({
-    id: student._id,
-    index: index + 1,
-    name: student.Student_Name
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" "),
-    email: student.Email,
-    mobile: student.Mobile,
-    courseName: student.Product_List?.join(", ") || "-",
-    courseMode: student.Student_Type || "-",
-    enrollmentDate: formatDate(student.Enrollment_Date),
-    endDate: formatDate(calculateEndDate(student.Enrollment_Date)),
-    remainingTokens: student.totalTokens - student.redeemedTokens,
-    attendedTokens: student.redeemedTokens,
-    totalTokens: student.totalTokens,
-  }));
-
   return (
     <Box
       sx={{ mt: "65px", display: "flex", flexDirection: "column" }}
@@ -655,10 +1045,13 @@ const StudentsTable = () => {
             flexGrow: 1,
             padding: 1,
             maxWidth: "none",
-            overflow: "auto",
+            overflowY: "auto",
+            overflowX: "hidden",
             display: "flex",
+            // overflow: "hidden",
             flexDirection: "column",
-            marginBottom: 2,
+            // marginBottom: 1,
+            height: "calc(100vh - 65px)",
           }}
           maxWidth="none"
         >
@@ -668,8 +1061,8 @@ const StudentsTable = () => {
               alignItems: "center",
               gap: 2,
               width: "100%",
-              marginBottom: 2,
-              marginTop: 3,
+              marginBottom: 1,
+              marginTop: 1,
               justifyContent: "flex-end",
             }}
           >
@@ -683,7 +1076,7 @@ const StudentsTable = () => {
                 flexGrow: 1,
               }}
             >
-              Candidate Data
+              Candidate List
             </Typography>
 
             {/* Dropdown */}
@@ -739,7 +1132,7 @@ const StudentsTable = () => {
               <Tooltip title="Refresh Data">
                 <IconButton
                   size="medium"
-                  onClick={fetchZohoStudents}
+                  onClick={handleRefresh}
                   disabled={loading}
                   sx={{
                     backgroundColor: loading ? "grey.300" : "#867ae9",
@@ -773,25 +1166,31 @@ const StudentsTable = () => {
           </Menu>
 
           <Box sx={{ height: 570, width: "100%", position: "relative" }}>
-            {rows.length > 0 ? (
+            {loading ? (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : rows.length > 0 ? (
               <>
                 <DataGrid
+                  autoHeight
                   rows={rows}
                   columns={columns}
-                  // columns={[
-                  //   {
-                  //     field: "index",
-                  //     headerName: "#",
-                  //     width: 50,
-                  //     sortable: false, // Optional: Disable sorting for the index column
-                  //     valueGetter: (params) => params.api.getRowIndexRelativeToVisibleRows(params.row.id) + 1,
-                  //   },
-                  //   ...columns, // Spread your existing columns
-                  // ]}
                   getRowId={(row) => row.id}
                   page={page}
                   pageSize={rowsPerPage}
-                  loading={loading}
+                  // density="compact"
+                  disableSelectionOnClick
                   sx={{
                     "& .MuiDataGrid-cell": {
                       fontSize: "0.9rem",
@@ -804,6 +1203,7 @@ const StudentsTable = () => {
                       backgroundColor: "#f5f5f5",
                       fontWeight: "bold",
                     },
+                    // "& .MuiDataGrid-virtualScroller": { overflow: "hidden !important" },
                   }}
                   hideFooter
                 />
@@ -816,30 +1216,17 @@ const StudentsTable = () => {
                     padding: "10px",
                   }}
                 >
-                  {/* Rows per page selector */}
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Typography>Rows per page:</Typography>
-                    <Select
-                      value={rowsPerPage}
-                      onChange={(event) => handleRowsPerPageChange(event)}
-                      sx={{ marginLeft: "10px", width: "70px", marginRight: "10px" }}
-                      size="small"
-                    >
-                      {[5, 10, 15, 25, 50].map((option) => (
-                        <MenuItem key={option} value={option}>
-                          {option}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-
                   {/* Pagination controls */}
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <IconButton
                       onClick={() => handlePageChange(page - 1)}
                       disabled={page === 0}
+                      size="small"
+                      sx={{
+                        color: page === 0 ? "gray" : "#867ae9",
+                      }}
                     >
-                     <ArrowBackIos />
+                      <ArrowBackIos />
                     </IconButton>
                     <Typography sx={{ margin: "0 10px" }}>
                       Page {page + 1} of {Math.ceil(totalCount / rowsPerPage)}
@@ -847,8 +1234,15 @@ const StudentsTable = () => {
                     <IconButton
                       onClick={() => handlePageChange(page + 1)}
                       disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
+                      size="small"
+                      sx={{
+                        color:
+                          page >= Math.ceil(totalCount / rowsPerPage) - 1
+                            ? "gray"
+                            : "#867ae9",
+                      }}
                     >
-                     <ArrowForwardIos />
+                      <ArrowForwardIos />
                     </IconButton>
                   </Box>
                 </Box>

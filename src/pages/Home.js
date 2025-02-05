@@ -8,14 +8,17 @@ import "react-calendar/dist/Calendar.css";
 import axios from "axios";
 import endpoints from "../Endpoints/endpoint";
 import { jwtDecode } from "jwt-decode";
+import RevenueCard from "./RevenueCard";
+import CollapsibleTable from "../components/CollapsibleRow";
+import BranchStudentTables from "../components/BranchStudentsTable";
 
 const drawerWidth = 240;
 
 function Home() {
-  const [greeting, setGreeting] = useState("");
-  const [date, setDate] = useState(new Date());
-  const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [attendanceStats, setAttendanceStats] = useState(null);
   const [roles, setRoles] = useState({
     isSuperAdmin: false,
     isAdmin: false,
@@ -35,110 +38,22 @@ function Home() {
     roleCheck();
   }, []);
 
-  const fetchAttendanceData = async (year, month) => {
-    setLoading(true);
+  const fetchBranchStudent = async () => {
     try {
       const response = await axios.get(
-        `${endpoints.serverBaseURL}/api/scan/attendance`,
-        {
-          params: { year, month },
-        }
+        `${endpoints.serverBaseURL}/api/std/dashboard-student`
       );
-  
-      const rawData = response.data.data;
-  
-      // Generate all days for the given month
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const adjustedData = Array.from({ length: daysInMonth }, (_, i) => {
-        const day = i + 1; // Days start from 1
-        const date = new Date(year, month - 1, day)
-          .toISOString()
-          .split("T")[0];
-  
-        // Find the corresponding entry in the raw data
-        const dayData = rawData.find((entry) => entry.date === date);
-  
-        // If no data exists for this date, exclude it
-        if (!dayData || dayData.presentCount === 0) return null;
-  
-        return {
-          date,
-          presentCount: dayData.presentCount, // Use the actual present count
-        };
-      }).filter(Boolean); // Remove null values for days without data
-  
-      console.log("Adjusted Attendance data:", adjustedData);
-      setAttendanceData(adjustedData);
+      setStudents(response.data.students);
+      setAttendanceStats(response.data.attendanceStats);
+      console.log("stats:",response.data.attendanceStats);
     } catch (error) {
-      console.error("Error fetching attendance data:", error);
-      setAttendanceData([]);
-    } finally {
-      setLoading(false);
+      console.log(error.response?.data?.message || error.message);
     }
   };
-  
-  
 
   useEffect(() => {
-    const currentMonth = date.getMonth() + 1; // Months are 0-based
-    const currentYear = date.getFullYear();
-    fetchAttendanceData(currentYear, currentMonth);
-  }, [date]);
-
-  const handleDateChange = (newDate) => {
-    const newMonth = newDate.getMonth() + 1; // Extract the correct month
-    const newYear = newDate.getFullYear(); // Extract the correct year
-
-    // Check if the month actually changed before making the API call
-    if (newMonth !== date.getMonth() + 1 || newYear !== date.getFullYear()) {
-      setDate(newDate); // Update the state with the new date
-      fetchAttendanceData(newYear, newMonth); // Fetch data only if the month/year changed
-    }
-  };
-
-  const handleMonthChange = ({ activeStartDate }) => {
-    const newMonth = activeStartDate.getMonth() + 1; // Extract the correct month
-    const newYear = activeStartDate.getFullYear(); // Extract the correct year
-
-    // Check if the month actually changed before making the API call
-    if (newMonth !== date.getMonth() + 1 || newYear !== date.getFullYear()) {
-      setDate(new Date(newYear, newMonth - 1, 1)); // Update state to trigger UI change
-      fetchAttendanceData(newYear, newMonth); // Fetch data only if the month/year changed
-    }
-  };
-
-  const tileContent = ({ date }) => {
-    const today = new Date();
-    const formattedDate = date.toISOString().split("T")[0];
-  
-    // Find attendance data for the given date
-    const attendanceForDate = attendanceData.find(
-      (entry) => entry.date === formattedDate
-    );
-  
-    if (date > today || !attendanceForDate) {
-      return null; // Do not display anything for future dates or missing data
-    }
-  
-    return (
-      <span
-        style={{
-          display: "inline-block",
-          padding: "2px 5px",
-          backgroundColor:
-            attendanceForDate.presentCount > 0 ? "#1976d2" : "#d3d3d3", // Blue for present, grey for absent
-          color: attendanceForDate.presentCount > 0 ? "#fff" : "#000",
-          borderRadius: "8px",
-          fontSize: "12px",
-          marginTop: "5px",
-        }}
-      >
-        {attendanceForDate.presentCount}
-      </span>
-    );
-  };
-  
-  
+    fetchBranchStudent();
+  }, []);
 
   return (
     <>
@@ -149,34 +64,16 @@ function Home() {
           component="main"
           sx={{
             flexGrow: 1,
-            p: 3,
+            p: 8,
+
             width: { sm: `calc(100% - ${drawerWidth}px)` },
             height: "100vh",
           }}
         >
           <Toolbar />
-          <h1>
-            {" "}
-            {"👋"} {greeting}{" "}
-          </h1>
-          <h4>To access the dashboard get premium subscription</h4>
 
-          {/* Calendar Component */}
-
-          {/* <Box sx={{ marginTop: 3 }}>
-            {loading ? (
-              <p>Loading...</p>
-            ) : (
-              (roles.isSuperAdmin || roles.isAdmin) && (
-                <Calendar
-                  onChange={handleDateChange}
-                  value={date}
-                  tileContent={tileContent}
-                  onActiveStartDateChange={handleMonthChange}
-                />
-              )
-            )}
-          </Box> */}
+          {/* <RevenueCard attendanceStats={attendanceStats}/> */}
+          {/* <BranchStudentTables /> */}
         </Box>
       </Box>
     </>

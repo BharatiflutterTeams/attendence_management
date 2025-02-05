@@ -22,6 +22,7 @@ import axios from "axios";
 import endpoints from "../Endpoints/endpoint";
 import { toast } from "react-toastify";
 import IDCard from "../components/IDCard";
+import { QrCodeIcon } from "lucide-react";
 
 export default function ScannerPage() {
   const navigate = useNavigate();
@@ -43,7 +44,9 @@ export default function ScannerPage() {
 
   const fetchStudentList = async () => {
     try {
-      const response = await axios.get(`${endpoints.serverBaseURL}/api/std/get-students`);
+      const response = await axios.get(
+        `${endpoints.serverBaseURL}/api/std/get-students`
+      );
       setStudents(response.data.students || []);
     } catch (error) {
       console.error("Error fetching student list:", error);
@@ -61,7 +64,7 @@ export default function ScannerPage() {
 
   const errorCallback = () => {
     setScanError("QR Not Found");
-    setShowScanAgain(true); // Show button to scan again
+    setShowScanAgain(true);
   };
 
   useEffect(() => {
@@ -80,9 +83,11 @@ export default function ScannerPage() {
 
   const handleScanSuccess = async (decodedText) => {
     try {
-      if (scanResult || scanError) return; // Prevent multiple scans
-  console.log("Extracted data:", decodedText);
-      const qrData = JSON.parse(decodedText); // Parse JSON stringified QR data
+      console.log("Decoded Text:", decodedText,scanError,scanResult);
+      
+      // if (scanResult || scanError) return;
+      // console.log("Extracted data:", decodedText);
+      const qrData = JSON.parse(decodedText);
       console.log("qr data:", qrData);
       setSelectedStudent(qrData);
       console.log("selected student:", selectedStudent);
@@ -97,20 +102,79 @@ export default function ScannerPage() {
   
       // Check if the scan time is within the valid range
       const currentTime = new Date();
-      const scanTokenTime = new Date(qrData.scanTokenTime); // assuming this is the time from the backend
+      const scanTokenTime = new Date(qrData.scanTokenTime);
   
       if (currentTime > scanTokenTime) {
         setScanError(`Scan token has expired. Cannot mark attendance.`);
         toast.error(`Scan token has expired. Cannot mark attendance.`);
         return;
       }
+
+      const checkerData = JSON.parse(sessionStorage.getItem("checker")) || {}; // Retrieve stored checker data
+const { selectedBranch, email } = checkerData;
+console.log("Checker Data:", checkerData);
   
-      const response = await axios.post(`${endpoints.serverBaseURL}/api/scan/validate-qr`, {
-        qrData,
-        companyId: companyData?.id,
-      });
+      const response = await axios.post(
+        `${endpoints.serverBaseURL}/api/scan/validate-qr`,
+        {
+          qrData,
+          companyId: companyData?.id,
+          branch: selectedBranch,
+          Email: email,
+        }
+      );
   
       if (response.status === 200) {
+        const { studentId, redeemedTokens, availableTokens } = response.data;
+        let updatedStudents = [];
+  
+        // Loop through all pages in sessionStorage and update the data
+        for (let i = 0; sessionStorage.getItem(`page-${i}`); i++) {
+          const pageDataString = sessionStorage.getItem(`page-${i}`);
+          console.log(`page-${i} data:`, pageDataString);
+  
+          if (!pageDataString) continue; // Skip if no data exists
+  
+          let pageData;
+          try {
+            pageData = JSON.parse(pageDataString); // Parse the data
+          } catch (error) {
+            console.error(`Error parsing JSON for page-${i}:`, error.message);
+            continue; // Skip if parsing fails
+          }
+  
+          // Ensure pageData.students is an array
+          if (!pageData.students || !Array.isArray(pageData.students)) {
+            console.error(`Parsed data for page-${i} is not an array of students:`, pageData);
+            continue;
+          }
+  
+          // Update the relevant student data
+          updatedStudents = pageData.students.map((student) => {
+            if (student.zoho_id === studentId) {
+              return {
+                ...student,
+                redeemedTokens,
+                availableTokens,
+              };
+            }
+            return student;
+          });
+  
+          // Update the session storage with the updated students
+          pageData.students = updatedStudents;
+          sessionStorage.setItem(`page-${i}`, JSON.stringify(pageData)); // Save updated data
+        }
+  
+        // Dispatch storage event after updating sessionStorage
+        window.dispatchEvent(new Event('storage'));
+  
+        // Now trigger the custom event
+        const customEvent = new CustomEvent("updateStudentsData", {
+          detail: { students: updatedStudents }, // Send the updated data
+        });
+        window.dispatchEvent(customEvent);
+  
         setMarkedStudents((prev) => ({
           ...prev,
           [qrData.student]: today,
@@ -119,7 +183,6 @@ export default function ScannerPage() {
         setScanError(null);
         toast.success(`${qrData.studentName} marked Present`);
         setShowScanAgain(true);
-        // scannerRef.current.start(); // Restart the scanner
       } else {
         const message = response.data.message;
         if (message === "ATTENDANCE_ALREADY_MARKED") {
@@ -135,25 +198,50 @@ export default function ScannerPage() {
         setShowScanAgain(true);
       }
     } catch (error) {
-      console.error("Error scanning QR Code:", error,error?.response?.data?.message);
-      setScanError(error?.response?.data?.message || "Error validating QR Code.");
-      toast.error(error?.response?.data?.message || "Error validating QR Code.");
+      console.error(
+        "Error scanning QR Code:",
+        error,
+        error?.response?.data?.message
+      );
+      setScanError(
+        error?.response?.data?.message || "Error validating QR Code."
+      );
+      toast.error(
+        error?.response?.data?.message || "Error validating QR Code."
+      );
       setShowScanAgain(true);
     }
   };
+  
+  
 
-  const handleScanAgain = () => {
-    setScanResult(null);
-    setScanError(null);
-    setSelectedStudent(null);
-    setShowScanAgain(false); // Hide the "Scan Again" button
+//   const handleScanAgain = () => {
+//   setScanResult(null);
+//   setScanError(null);
+//   setSelectedStudent(null);
+//   setShowScanAgain(false);
 
-    // Restart the scanner using the Html5Qrcode instance
-    if (scannerRef.current) {
-      scannerRef.current.clear(); // Clear the previous state
-      scannerRef.current.render(successCallback, errorCallback); // Restart the scanner
-    }
+//   // Ensure the scanner is properly cleared and re-rendered
+//   if (scannerRef.current) {
+//     scannerRef.current.clear().then(() => {
+//       scannerRef.current.render(successCallback, errorCallback);
+//     }).catch((error) => {
+//       console.error("Failed to clear scanner:", error);
+//     });
+//   }
+// };
+
+const handleScanAgain = () => {
+  window.location.reload();
+}
+
+
+  const initializeScanner = () => {
+    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    scanner.render(successCallback, errorCallback);
+    scannerRef.current = scanner;
   };
+  
   
 
   const handleLogout = () => {
@@ -170,134 +258,141 @@ export default function ScannerPage() {
     setPage(0);
   };
 
-  console.log(selectedStudent)
-
   return (
     <Box
-  sx={{
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EEF1FF",
-    padding: 1,
-    position: "relative",
-  }}
->
-  <Box sx={{ position: "absolute", top: 16, right: 16 }}>
-    <Button variant="outlined" color="secondary" onClick={handleLogout}>
-      Logout
-    </Button>
-  </Box>
-
-  <Container>
-    <Grid container spacing={2} justifyContent="center" alignItems="center">
-      <Grid item xs={12}>
-        <Typography
-          variant="h5"
-          sx={{ textAlign: "center", fontWeight: "bold", color: "primary.main" }}
-        >
-          {companyData?.name}
-        </Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Card
-          sx={{
-            maxWidth: "400px",
-            margin: "auto",
-            padding: 2,
-            backgroundColor: "#DFCCFB",
-          }}
-        >
-          <Box id="reader" ref={scannerRef} sx={{ width: "100%" }} />
-        </Card>
-      </Grid>
-      {scanResult && selectedStudent && !scanError && (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      flexDirection: "column",
-      width: "100%",
-    }}
-  >
-    <Typography
-      variant="h6"
-      color="green"
-      sx={{ textAlign: "center", marginTop: 2 }}
-    >
-      {scanResult}
-    </Typography>
-    <Box
       sx={{
+        minHeight: "100vh",
         display: "flex",
+        flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        width: "100%",
-        marginTop: 2,
+        backgroundColor: "#EEF1FF",
+        padding: 1,
+        position: "relative",
       }}
     >
-      <IDCard candidate={selectedStudent} />
-    </Box>
-  </Box>
-)}
-      {Boolean(scanError) && (
-  <Typography
-    variant="h6"
-    color="red"
-    sx={{ textAlign: "center", marginTop: 2 }}
-  >
-    {scanError}
-  </Typography>
-)}
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <Button variant="outlined" color="secondary" onClick={handleLogout}>
+          Logout
+        </Button>
+      </Box>
 
+      <Container>
+        <Grid container spacing={2} justifyContent="center" alignItems="center">
+          <Grid item xs={12}>
+            <Typography
+              variant="h5"
+              sx={{
+                textAlign: "center",
+                fontWeight: "bold",
+                color: "primary.main",
+              }}
+            >
+              {companyData?.name}
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Card
+              sx={{
+                maxWidth: "400px",
+                margin: "auto",
+                padding: 2,
+                backgroundColor: "#DFCCFB",
+              }}
+            >
+              <Box id="reader" ref={scannerRef} sx={{ width: "100%" }} />
+            </Card>
+          </Grid>
+          {scanResult &&
+            selectedStudent && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                  width: "100%",
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  color="green"
+                  sx={{ textAlign: "center", marginTop: 2 }}
+                >
+                  {scanResult}
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    marginTop: 2,
+                  }}
+                >
+                  <IDCard candidate={selectedStudent} />
+                </Box>
+              </Box>
+            )}
 
+          {Boolean(scanError) && (
+            <Typography
+              variant="h6"
+              color="red"
+              sx={{ textAlign: "center", marginTop: 2 }}
+            >
+              {scanError}
+            </Typography>
+          )}
 
-      <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center" }}>
-  {/* <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
+          <Grid
+            item
+            xs={12}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            {/* <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
     Student Attendance
   </Typography> */}
 
-  {/* Conditionally render the IDCard */}
-  {selectedStudent && (
-    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
-      <IDCard candidate={selectedStudent} />
-    </Box>
-  )}
+            {/* Conditionally render the IDCard */}
+            {/* {selectedStudent && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <IDCard candidate={selectedStudent} />
+              </Box>
+            )} */}
 
-{showScanAgain && (
-            <Grid item xs={12} sx={{ marginTop: 2 }}>
-              <Button variant="contained" color="primary" onClick={handleScanAgain}>
+            {showScanAgain && (
+              <Grid item xs={12} sx={{ marginTop: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleScanAgain}
+                startIcon={<QrCodeIcon />}
+              >
                 Scan Again
               </Button>
             </Grid>
-          )}
-
-  {/* <TablePagination
-    rowsPerPageOptions={[10, 25, 50]}
-    component="div"
-    count={students.length}
-    rowsPerPage={rowsPerPage}
-    page={page}
-    onPageChange={handleChangePage}
-    onRowsPerPageChange={handleChangeRowsPerPage}
-  /> */}
-</Grid>
-
-    </Grid>
-  </Container>
-</Box>
-
+            )}
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 }
 
-
-
-
 //Running Code
-
 
 // import React, { useEffect, useRef, useState } from "react";
 // import { Html5QrcodeScanner } from "html5-qrcode";

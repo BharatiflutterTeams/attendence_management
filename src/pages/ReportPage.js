@@ -20,12 +20,16 @@ import {
   Box,
   Typography,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import * as XLSX from "xlsx";
 import axios from "axios";
 import { ClearIcon } from "@mui/x-date-pickers";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import { CircularProgress } from "@mui/material";
 
 const debounce = (func, delay) => {
   let timeout;
@@ -49,6 +53,7 @@ export default function ReportPage() {
   const [candidateName, setCandidateName] = useState("");
   const [debouncedName, setDebouncedName] = useState(candidateName);
   const [daysInData, setDaysInData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -72,6 +77,7 @@ export default function ReportPage() {
     selectedMonth = month,
     selectedYear = year
   ) => {
+    setLoading(true);
     try {
       const response = await axios.get(
         `http://localhost:5001/api/scan/attendance`,
@@ -87,7 +93,6 @@ export default function ReportPage() {
         const [entryYear, entryMonth, entryDay] = entry.date
           .split("-")
           .map(Number);
-
         if (
           entryYear > Number(currentYear) ||
           (entryYear === Number(currentYear) &&
@@ -96,49 +101,67 @@ export default function ReportPage() {
             entryMonth === Number(currentMonth) &&
             entryDay > currentDay)
         ) {
-          return false; // Exclude future dates
+          return false;
         }
         return true;
       });
 
       const totalDaysInMonth =
         selectedYear === currentYear && selectedMonth === currentMonth
-          ? currentDay // Limit to today's date if it's the current month
-          : new Date(selectedYear, selectedMonth, 0).getDate(); // Total days in the selected month
+          ? currentDay 
+          : new Date(selectedYear, selectedMonth, 0).getDate();
 
       const employeeMap = {};
       filteredAttendanceData.forEach((entry) => {
-        const day = new Date(entry.date).getDate(); // Extract day from date
-        entry.studentNames.forEach((name) => {
-          if (!employeeMap[name]) {
-            employeeMap[name] = Array(totalDaysInMonth).fill(0); // Initialize only up to totalDaysInMonth
-          }
-          employeeMap[name][day - 1] = 1; // Mark attendance
-        });
-      });
+        const day = new Date(entry.date).getDate();
 
+        if (Array.isArray(entry.students)) {
+          entry.students.forEach((student) => {
+            const studentName = student.studentName;
+            if (!employeeMap[studentName]) {
+              employeeMap[studentName] = {
+                attendance: Array(totalDaysInMonth).fill(0),
+                totalTokens: 0,
+                redeemedTokens: 0,
+              };
+            }
+
+            employeeMap[studentName].attendance[day - 1] = 1;
+
+            employeeMap[studentName].totalTokens = student.totalTokens || 0;
+            employeeMap[studentName].redeemedTokens =
+              student.redeemedTokens || 0;
+          });
+        } else {
+          console.warn(
+            `Expected students to be an array, but got ${typeof entry.students}`
+          );
+        }
+      });
       const employeeList = Object.keys(employeeMap).map((name) => ({
         name,
-        attendance: employeeMap[name],
+        attendance: employeeMap[name].attendance,
+        totalTokens: employeeMap[name].totalTokens,
+        redeemedTokens: employeeMap[name].redeemedTokens,
       }));
 
       setEmployees(employeeList);
       setAttendance(filteredAttendanceData);
       setHasSearched(true);
 
-      // Store the unique days in the data
       const uniqueDays = [
         ...new Set(
           filteredAttendanceData.map((entry) => new Date(entry.date).getDate())
         ),
       ];
 
-      setDaysInData(uniqueDays); // Update state with days
+      setDaysInData(uniqueDays);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
-
   useEffect(() => {
     const debouncedSearch = debounce(() => {
       setDebouncedName(candidateName);
@@ -173,13 +196,44 @@ export default function ReportPage() {
 
   const handleRowsPerPageChange = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to the first page
+    setPage(0);
   };
 
   const paginatedEmployees = filteredEmployees.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+const formatDate = (month, day) => {
+  const date = new Date(year, month - 1, day);
+  const options = { month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+};
+
+const downloadExcel = () => {
+  const excelData = employees.map((employee) => {
+    const attendanceData = {};
+
+    daysInData.forEach((day) => {
+      const formattedDate = formatDate(month, day);
+      attendanceData[formattedDate] = 
+        employee.attendance[day - 1] === 1 ? "P" : "A";
+    });
+
+    return {
+      Name: employee.name,
+      ...attendanceData,
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+
+  XLSX.writeFile(workbook, `Attendance_Report_${month}_${year}.xlsx`);
+};
+
 
   return (
     <>
@@ -205,8 +259,8 @@ export default function ReportPage() {
                 justifyContent: "space-between",
                 flexWrap: "wrap",
                 gap: 2,
-                mb: 1,
-                marginTop: "6px",
+                // mb: 0.5,
+                marginTop: "3px",
               }}
             >
               <Typography variant="h5" sx={{ mb: 0, whiteSpace: "nowrap" }}>
@@ -220,6 +274,20 @@ export default function ReportPage() {
                   flexWrap: "wrap",
                 }}
               >
+                <Tooltip title="Download Attendance Report" arrow>
+                  <IconButton
+                    onClick={downloadExcel}
+                    sx={{
+                      bgcolor: "rgb(134, 122, 233)",
+                      "&:hover": { bgcolor: "rgb(95, 85, 190)" },
+                      color: "white",
+                    }}
+                    size="small"
+                  >
+                    <FileDownloadIcon />
+                  </IconButton>
+                </Tooltip>
+
                 <TextField
                   label="Candidate Name"
                   placeholder="Enter Name"
@@ -240,7 +308,7 @@ export default function ReportPage() {
                   }}
                 />
 
-                <FormControl sx={{ minWidth: 200 }}>
+                <FormControl sx={{ minWidth: 150 }}>
                   <InputLabel>Select Month</InputLabel>
                   <Select
                     value={month}
@@ -256,7 +324,7 @@ export default function ReportPage() {
                   </Select>
                 </FormControl>
 
-                <FormControl sx={{ minWidth: 200 }}>
+                <FormControl sx={{ minWidth: 120 }}>
                   <InputLabel>Select Year</InputLabel>
                   <Select
                     value={year}
@@ -290,7 +358,18 @@ export default function ReportPage() {
           </Box>
 
           {/* Table Section */}
-          {hasSearched && filteredEmployees.length === 0 && candidateName ? (
+          {loading ? (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "calc(100vh - 230px)",
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : hasSearched && filteredEmployees.length === 0 && candidateName ? (
             <Typography
               variant="h6"
               sx={{ mt: 4, textAlign: "center", color: "gray" }}
@@ -303,131 +382,195 @@ export default function ReportPage() {
             </Typography>
           ) : (
             <>
-            <TableContainer
-  component={Paper}
-  sx={{
-    overflowX: "auto",
-    maxHeight: "calc(100vh - 200px)",
-    borderBottom: "1px solid rgba(224, 224, 224, 1)",
-  }}
->
-<Table stickyHeader sx={{ minWidth: 650 }} size="small">
-    <TableHead>
-      <TableRow>
-        <TableCell
-          sx={{
-            position: "sticky",
-            left: 0,
-            zIndex: 3,
-            fontWeight: "bold",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Candidate Name
-        </TableCell>
-        {daysInData.map((day, index) => (
-          <TableCell key={index} align="center" sx={{ fontWeight: "bold" }}>
-            {day}
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
+              <TableContainer
+                component={Paper}
+                sx={{
+                  overflowX: "auto",
+                  maxHeight: "calc(100vh - 200px)",
+                  minHeight: "300px",
+                  borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                }}
+              >
+                <Table stickyHeader sx={{ minWidth: 650 }} size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: 0,
+                          zIndex: 3,
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Candidate Name
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: "150px",
+                          zIndex: 3,
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                          backgroundColor: "white",
+                          textAlign: "center",
+                          width: "150px",
+                        }}
+                      >
+                         Redeemed / Total Tokens
+                      </TableCell>
+                      {/* <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: "200px",
+                          zIndex: 3,
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                          backgroundColor: "white",
+                        }}
+                      >
+                        Redeemed Tokens
+                      </TableCell> */}
 
-    <TableBody>
-      {paginatedEmployees.map((employee) => (
-        <TableRow
-          key={employee.name}
-          sx={{
-            "&:nth-of-type(odd)": {
-              bgcolor: "rgba(0, 0, 0, 0.02)",
-            },
-          }}
-        >
-          <TableCell
-            component="th"
-            scope="row"
-            sx={{
-              position: "sticky",
-              left: 0,
-              backgroundColor: "white",
-              zIndex: 1,
-            }}
-          >
-            {employee.name
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ")}
-          </TableCell>
-          {daysInData.map((day) => {
-            const status = employee.attendance[day - 1] || 0;
-            return (
-              <TableCell key={day} align="center">
-                {status === 1 ? (
-                  <CheckIcon sx={{ color: "green" }} />
-                ) : (
-                  <CloseIcon sx={{ color: "red" }} />
-                )}
-              </TableCell>
-            );
-          })}
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</TableContainer>
+                      {daysInData.map((day, index) => (
+                        <TableCell
+                          key={index}
+                          align="center"
+                          sx={{ fontWeight: "bold" }}
+                        >
+                          {day}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
 
-{/* Custom Pagination with integrated design */}
-<Box
-  sx={{
-    display: "flex",
-    justifyContent: "end",
-    alignItems: "center",
-    borderTop: "1px solid rgba(224, 224, 224, 1)",
-    px: 2,
-    py: 1,
-    backgroundColor: "#ffffff",
-  }}
->
-  {/* Pagination Controls */}
-  <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Typography variant="body2" component="span" sx={{ mr: 1 }}>
-      Rows per page:
-    </Typography>
-    <Select
-      value={rowsPerPage}
-      onChange={handleRowsPerPageChange}
-      size="small"
-      sx={{ width: 70 }}
-    >
-      {[5, 10, 25].map((option) => (
-        <MenuItem key={option} value={option}>
-          {option}
-        </MenuItem>
-      ))}
-    </Select>
-  </Box>
-  
-  <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Button
-      onClick={handlePrevPage}
-      disabled={page === 0}
-      sx={{ mr: 1, minWidth: 35 }}
-    >
-      <ArrowBackIos />
-    </Button>
-    <Typography variant="body2" component="span" sx={{ mx: 1 }}>
-      Page {page + 1} of {totalPages}
-    </Typography>
-    <Button
-      onClick={handleNextPage}
-      disabled={page >= totalPages - 1}
-      sx={{ ml: 1, minWidth: 35 }}
-    >
-      <ArrowForwardIos />
-    </Button>
-  </Box>
-</Box>
+                  <TableBody>
+                    {paginatedEmployees.map((employee) => {
+                      return (
+                        <TableRow
+                          key={employee.name}
+                          sx={{
+                            "&:nth-of-type(odd)": {
+                              bgcolor: "rgba(0, 0, 0, 0.02)",
+                            },
+                          }}
+                        >
+                          <TableCell
+                            component="th"
+                            scope="row"
+                            sx={{
+                              position: "sticky",
+                              left: 0,
+                              backgroundColor: "white",
+                              zIndex: 1,
+                              textWrap: "nowrap",
+                            }}
+                          >
+                            {employee.name
+                              .split(" ")
+                              .map(
+                                (word) =>
+                                  word.charAt(0).toUpperCase() + word.slice(1)
+                              )
+                              .join(" ")}
+                          </TableCell>
 
+                          <TableCell
+                            sx={{
+                              position: "sticky",
+                              left: "120px", // Adjust for the width of the Candidate Name column
+                              backgroundColor: "white",
+                              zIndex: 1,
+                            }}
+                            align="center"
+                          >
+                            {/* Display total tokens */}
+                            {employee.redeemedTokens} / {employee.totalTokens}
+                          </TableCell>
+
+                          {/* <TableCell
+                            sx={{
+                              position: "sticky",
+                              left: "200px", // Adjust for the width of the Total Tokens column
+                              backgroundColor: "white",
+                              zIndex: 1.2,
+                            }}
+                            align="center"
+                          >
+                            {employee.redeemedTokens}
+                          </TableCell> */}
+
+                          {daysInData.map((day) => {
+                            const status = employee.attendance[day - 1] || 0;
+                            return (
+                              <TableCell key={day} align="center">
+                                {status === 1 ? (
+                                  <CheckIcon sx={{ color: "green" }} />
+                                ) : (
+                                  <CloseIcon sx={{ color: "red" }} />
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Custom Pagination with integrated design */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "end",
+                  alignItems: "center",
+                  borderTop: "1px solid rgba(224, 224, 224, 1)",
+                  px: 2,
+                  py: 1,
+                  backgroundColor: "#ffffff",
+                  flexShrink: 0,
+                }}
+              >
+                {/* Pagination Controls */}
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography variant="body2" component="span" sx={{ mr: 1 }}>
+                    Rows per page:
+                  </Typography>
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleRowsPerPageChange}
+                    size="small"
+                    sx={{ width: 70 }}
+                  >
+                    {[5, 10, 25].map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Button
+                    onClick={handlePrevPage}
+                    disabled={page === 0}
+                    sx={{ mr: 1, minWidth: 35 }}
+                  >
+                    <ArrowBackIos />
+                  </Button>
+                  <Typography variant="body2" component="span" sx={{ mx: 1 }}>
+                    Page {page + 1} of {totalPages}
+                  </Typography>
+                  <Button
+                    onClick={handleNextPage}
+                    disabled={page >= totalPages - 1}
+                    sx={{ ml: 1, minWidth: 35 }}
+                  >
+                    <ArrowForwardIos />
+                  </Button>
+                </Box>
+              </Box>
             </>
           )}
         </Box>

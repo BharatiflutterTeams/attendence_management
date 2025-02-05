@@ -73,7 +73,6 @@ function Home() {
           <Toolbar />
 
           {/* <RevenueCard attendanceStats={attendanceStats}/> */}
-          {/* <CollapsibleTable/> */}
           {/* <BranchStudentTables /> */}
         </Box>
       </Box>

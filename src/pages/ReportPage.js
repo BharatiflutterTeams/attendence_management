@@ -101,25 +101,23 @@ export default function ReportPage() {
             entryMonth === Number(currentMonth) &&
             entryDay > currentDay)
         ) {
-          return false; // Exclude future dates
+          return false;
         }
         return true;
       });
 
       const totalDaysInMonth =
         selectedYear === currentYear && selectedMonth === currentMonth
-          ? currentDay // Limit to today's date if it's the current month
-          : new Date(selectedYear, selectedMonth, 0).getDate(); // Total days in the selected month
+          ? currentDay 
+          : new Date(selectedYear, selectedMonth, 0).getDate();
 
       const employeeMap = {};
       filteredAttendanceData.forEach((entry) => {
-        const day = new Date(entry.date).getDate(); // Extract day from date
+        const day = new Date(entry.date).getDate();
 
-        // Check if students exist and is an array before processing
         if (Array.isArray(entry.students)) {
           entry.students.forEach((student) => {
             const studentName = student.studentName;
-            // Initialize student in employeeMap if not already present
             if (!employeeMap[studentName]) {
               employeeMap[studentName] = {
                 attendance: Array(totalDaysInMonth).fill(0),
@@ -128,10 +126,8 @@ export default function ReportPage() {
               };
             }
 
-            // Mark attendance as present
             employeeMap[studentName].attendance[day - 1] = 1;
 
-            // Accumulate totalTokens and redeemedTokens
             employeeMap[studentName].totalTokens = student.totalTokens || 0;
             employeeMap[studentName].redeemedTokens =
               student.redeemedTokens || 0;
@@ -142,7 +138,6 @@ export default function ReportPage() {
           );
         }
       });
-      // Map the employee data to an array of employees
       const employeeList = Object.keys(employeeMap).map((name) => ({
         name,
         attendance: employeeMap[name].attendance,
@@ -154,7 +149,6 @@ export default function ReportPage() {
       setAttendance(filteredAttendanceData);
       setHasSearched(true);
 
-      // Store the unique days in the data
       const uniqueDays = [
         ...new Set(
           filteredAttendanceData.map((entry) => new Date(entry.date).getDate())
@@ -202,7 +196,7 @@ export default function ReportPage() {
 
   const handleRowsPerPageChange = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to the first page
+    setPage(0);
   };
 
   const paginatedEmployees = filteredEmployees.slice(
@@ -210,26 +204,36 @@ export default function ReportPage() {
     page * rowsPerPage + rowsPerPage
   );
 
-  const downloadExcel = () => {
-    const excelData = employees.map((employee) => {
-      const attendanceData = {};
-      daysInData.forEach((day, index) => {
-        attendanceData[`Day ${day}`] =
-          employee.attendance[day - 1] === 1 ? "P" : "A";
-      });
-      return {
-        Name: employee.name,
-        ...attendanceData,
-      };
+const formatDate = (month, day) => {
+  const date = new Date(year, month - 1, day);
+  const options = { month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+};
+
+const downloadExcel = () => {
+  const excelData = employees.map((employee) => {
+    const attendanceData = {};
+
+    daysInData.forEach((day) => {
+      const formattedDate = formatDate(month, day);
+      attendanceData[formattedDate] = 
+        employee.attendance[day - 1] === 1 ? "P" : "A";
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    return {
+      Name: employee.name,
+      ...attendanceData,
+    };
+  });
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    XLSX.writeFile(workbook, `Attendance_Report_${month}_${year}.xlsx`);
-  };
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+
+  XLSX.writeFile(workbook, `Attendance_Report_${month}_${year}.xlsx`);
+};
+
 
   return (
     <>
@@ -409,9 +413,11 @@ export default function ReportPage() {
                           fontWeight: "bold",
                           whiteSpace: "nowrap",
                           backgroundColor: "white",
+                          textAlign: "center",
+                          width: "150px",
                         }}
                       >
-                        Total Tokens / Redeemed
+                         Redeemed / Total Tokens
                       </TableCell>
                       {/* <TableCell
                         sx={{
@@ -472,14 +478,14 @@ export default function ReportPage() {
                           <TableCell
                             sx={{
                               position: "sticky",
-                              left: "150px", // Adjust for the width of the Candidate Name column
+                              left: "120px", // Adjust for the width of the Candidate Name column
                               backgroundColor: "white",
                               zIndex: 1,
                             }}
                             align="center"
                           >
                             {/* Display total tokens */}
-                            {employee.totalTokens} / {employee.redeemedTokens}
+                            {employee.redeemedTokens} / {employee.totalTokens}
                           </TableCell>
 
                           {/* <TableCell

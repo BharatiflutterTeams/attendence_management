@@ -90,85 +90,114 @@ const StudentsTable = () => {
       toast.error("Please enter a valid token value.");
       return;
     }
-  
+
+    // Parse newTokenValue to a number
+    const updatedTotalTokens = Number(newTokenValue);
+    if (isNaN(updatedTotalTokens)) {
+      toast.error("Invalid token value. Please enter a number.");
+      return;
+    }
+
+    // Retrieve student data from sessionStorage
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+
+    if (!storedData) {
+      toast.error("Student data not found.");
+      return;
+    }
+
+    const currentStudent = storedData.students.find(
+      (student) => student.zoho_id === editingToken
+    );
+
+    if (!currentStudent) {
+      toast.error("Student not found.");
+      return;
+    }
+
+    // Validate: Total Tokens should NOT be less than Redeemed Tokens
+    if (updatedTotalTokens < currentStudent.redeemedTokens) {
+      toast.error("Total tokens cannot be less than redeemed tokens.");
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/std/change-token`,
         {
           studentId: editingToken,
-          totalTokens: newTokenValue,
+          totalTokens: updatedTotalTokens,
         }
       );
-  
+
       if (response.status === 200) {
         toast.success("Token value updated successfully.");
-  
-        // Retrieve the full dataset from sessionStorage
-        const storedData = JSON.parse(sessionStorage.getItem("all-students"));
-  
-        if (storedData) {
-          // Update the student data locally
-          const updatedStudents = storedData.students.map((student) =>
-            student.zoho_id === editingToken
-              ? { ...student, totalTokens: newTokenValue }
-              : student
-          );
-  
-          // Update sessionStorage with the new data
-          sessionStorage.setItem(
-            "all-students",
-            JSON.stringify({ ...storedData, students: updatedStudents })
-          );
-  
-          // Update React state with the new data
-          setStudents(updatedStudents);
-          setFilteredStudents(updatedStudents);
-  
-          setRows(
-            updatedStudents.map((student, index) => ({
-              id: student.zoho_id,
-              index: index + 1,
-              name: student.Student_Name.split(" ")
-                .map(
-                  (word) =>
-                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                )
-                .join(" "),
-              email: student.Email,
-              mobile: student.Mobile,
-              branch: student.Branch || "-",
-              courseName: student.Course_Name1 || "-",
-              courseMode: student.Student_Type || "-",
-              enrollmentDate: formatDate(student.Enrollment_Date),
-              endDate: student.End_Date
-                ? new Date(student.End_Date).toISOString().split("T")[0]
-                : "",
-              formattedEndDate: student.End_Date
-                ? formatDate(student.End_Date)
-                : "N/A",
-              remainingTokens: student.totalTokens - student.redeemedTokens,
-              attendedTokens: student.redeemedTokens,
-              totalTokens: student.totalTokens,
-            }))
-          );
-        }
-  
-        // Reset the editing state
+
+        // Update student data locally
+        const updatedStudents = storedData.students.map((student) =>
+          student.zoho_id === editingToken
+            ? { ...student, totalTokens: updatedTotalTokens }
+            : student
+        );
+
+        // Update sessionStorage with new data
+        sessionStorage.setItem(
+          "all-students",
+          JSON.stringify({ ...storedData, students: updatedStudents })
+        );
+
+        // Update React state
+        setStudents(updatedStudents);
+        setFilteredStudents(updatedStudents);
+
+        setRows(
+          updatedStudents.map((student, index) => ({
+            id: student.zoho_id,
+            index: index + 1,
+            name: student.Student_Name.split(" ")
+              .map(
+                (word) =>
+                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+              )
+              .join(" "),
+            email: student.Email,
+            mobile: student.Mobile
+              ? student.Mobile.startsWith("+91")
+                ? student.Mobile
+                : `+91${student.Mobile}`
+              : "-",
+            branch: student.Branch || "-",
+            courseName: student.Course_Name1 || "-",
+            courseMode: student.Student_Type || "-",
+            enrollmentDate: formatDate(student.Enrollment_Date),
+            endDate: student.End_Date
+              ? new Date(student.End_Date).toISOString().split("T")[0]
+              : "",
+            formattedEndDate: student.End_Date
+              ? formatDate(student.End_Date)
+              : "N/A",
+            remainingTokens: student.totalTokens - student.redeemedTokens,
+            attendedTokens: student.redeemedTokens,
+            totalTokens: student.totalTokens,
+          }))
+        );
+
+        // Reset editing state
         setEditingToken(null);
         setNewTokenValue("");
       }
     } catch (error) {
       console.error("Failed to update token value:", error);
-      toast.error(error.response?.data?.message || "Failed to update token value.");
+      toast.error(
+        error.response?.data?.message || "Failed to update token value."
+      );
     }
   };
-  
-  
+
   const handleRefresh = () => {
     sessionStorage.removeItem("all-students");
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   };
-  
 
   const fetchZohoStudents = async () => {
     setLoading(true);
@@ -237,64 +266,48 @@ const StudentsTable = () => {
     const storedData = sessionStorage.getItem(`page-${pages}`);
     if (storedData) {
       const parsedData = JSON.parse(storedData);
-      setStudents(parsedData.students); // Update students state with the session data
+      setStudents(parsedData.students);
     }
   };
 
-  useEffect(() => {
-    const handleCustomEvent = (e) => {
-      console.log("Custom event fired! Updated data:", e.detail.students);
+  const formatMobileNumber = (mobile) => {
+    if (!mobile) return "-"; // Handle missing numbers
   
-      // Update the state with the updated student data
-      setStudents(e.detail.students);
-      setFilteredStudents(e.detail.students);
-      setRows(
-        e.detail.students.map((student, index) => ({
-          id: student.zoho_id,
-          index: index + 1,
-          name: student.Student_Name.split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(" "),
-          email: student.Email,
-          mobile: student.Mobile,
-          branch: student.Branch || "-",
-          courseName: student.Course_Name1 || "-",
-          courseMode: student.Student_Type || "-",
-          enrollmentDate: formatDate(student.Enrollment_Date),
-          endDate: student.End_Date ? new Date(student.End_Date).toISOString().split("T")[0] : "",
-          formattedEndDate: student.End_Date ? formatDate(student.End_Date) : "N/A",
-          remainingTokens: student.totalTokens - student.redeemedTokens,
-          attendedTokens: student.redeemedTokens,
-          totalTokens: student.totalTokens,
-        }))
-      );
-    };
+    // Remove spaces and unwanted characters
+    mobile = mobile.trim();
   
-    // Listen for the custom event
-    window.addEventListener("updateStudentsData", handleCustomEvent);
+    // If the number starts with "91" but without "+", convert to "+91"
+    if (/^91\d{10}$/.test(mobile)) {
+      return `+91${mobile.slice(2)}`;
+    }
   
-    // Cleanup the event listener on unmount
-    return () => {
-      window.removeEventListener("updateStudentsData", handleCustomEvent);
-    };
-  }, []);
+    // If the number starts with "+91" and has 10 digits, return as is
+    if (/^\+91\d{10}$/.test(mobile)) {
+      return mobile;
+    }
   
+    // If the number has exactly 10 digits, prepend "+91"
+    if (/^\d{10}$/.test(mobile)) {
+      return `+91${mobile}`;
+    }
   
+    // Return the original value if it doesn't fit expected formats
+    return mobile;
+  };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-  
+
       // Check if data is already stored in sessionStorage
       const storedData = sessionStorage.getItem("all-students");
       let allData;
-  
+
       if (storedData) {
         // Use the stored data if available
         const parsedData = JSON.parse(storedData);
         allData = parsedData.students;
         setTotalCount(parsedData.totalCount);
-        console.log("Data from sessionStorage:", allData);
       } else {
         // Fetch all data from the server
         try {
@@ -303,17 +316,17 @@ const StudentsTable = () => {
             { params: { limit: "all" } }
           );
           console.log("Fetched all students:", response.data);
-  
+
           const { students, totalCount } = response.data;
-  
+
           // Sort students by Enrollment_Date
           const sortedStudents = students.sort(
             (a, b) => new Date(b.Enrollment_Date) - new Date(a.Enrollment_Date)
           );
-  
+
           allData = sortedStudents;
           setTotalCount(totalCount);
-  
+
           // Store the full dataset in sessionStorage
           sessionStorage.setItem(
             "all-students",
@@ -325,12 +338,12 @@ const StudentsTable = () => {
           return;
         }
       }
-  
+
       // Implement client-side pagination
       const startIndex = page * rowsPerPage;
       const endIndex = startIndex + rowsPerPage;
       const paginatedData = allData.slice(startIndex, endIndex);
-  
+
       setStudents(paginatedData);
       setFilteredStudents(paginatedData);
       setRows(
@@ -339,11 +352,12 @@ const StudentsTable = () => {
           index: startIndex + index + 1,
           name: student.Student_Name.split(" ")
             .map(
-              (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
             )
             .join(" "),
           email: student.Email,
-          mobile: student.Mobile,
+          mobile: formatMobileNumber(student.Mobile),
           branch: student.Branch || "-",
           courseName: student.Course_Name1 || "-",
           courseMode: student.Student_Type || "-",
@@ -354,25 +368,18 @@ const StudentsTable = () => {
           formattedEndDate: student.End_Date
             ? formatDate(student.End_Date)
             : "N/A",
-          remainingTokens: student.totalTokens - student.redeemedTokens,
+          remainingTokens: student.availableTokens,
           attendedTokens: student.redeemedTokens,
           totalTokens: student.totalTokens,
         }))
       );
-  
+
       setLoading(false);
     };
-  
+
     loadData();
   }, [page, rowsPerPage, refreshTrigger]);
-  
 
- 
-  
-    //  if (loading) {
-    //   return <div>Loading...</div>;
-    // }
-  
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
@@ -428,7 +435,7 @@ const StudentsTable = () => {
   const defaultSearchValue = "";
 
   const [filterData, setFilterData] = useState({
-    searchKeys: ["name", "mobile", "email"],
+    searchKeys: ["name", "mobile", "email", "branch"],
     searchOnKey: "name",
     searchValue: defaultSearchValue,
   });
@@ -455,27 +462,28 @@ const StudentsTable = () => {
   const handleSearchChange = (e) => {
     const searchValue = e.target.value.toLowerCase();
     setFilterData({ ...filterData, searchValue });
-  
+
     // Retrieve all data from sessionStorage
-  const storedData = JSON.parse(sessionStorage.getItem("all-students"));
-  const allPagesData = storedData ? storedData.students : [];
-  
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+    const allPagesData = storedData ? storedData.students : [];
+
     // Map the search key to the appropriate field name in the data
     const searchKeyMap = {
       name: "Student_Name",
       mobile: "Mobile",
       email: "Email",
+      branch: "Branch",
     };
     const searchKey = searchKeyMap[filterData.searchOnKey];
-  
+
     // Filter the students based on the search value
     const filteredStudents = searchValue
       ? allPagesData.filter((student) => {
-          const fieldValue = student[searchKey]?.toLowerCase() || "";
+          const fieldValue = student[searchKey]?.toLowerCase().trim() || "";
           return fieldValue.includes(searchValue);
         })
-      : allPagesData; // Show all students when search field is cleared
-  
+      : allPagesData;
+
     // Update the filtered students in the state
     setFilteredStudents(filteredStudents);
     setRows(
@@ -488,32 +496,31 @@ const StudentsTable = () => {
           )
           .join(" "),
         email: student.Email,
-        mobile: student.Mobile,
+        mobile: formatMobileNumber(student.Mobile),
         courseName: student.Course_Name1 || "-",
         courseMode: student.Student_Type || "-",
         branch: student.Branch || "-",
         enrollmentDate: formatDate(student.Enrollment_Date),
         endDate: student.End_Date
-          ? new Date(student.End_Date).toISOString().split("T")[0] // Raw ISO date for input
+          ? new Date(student.End_Date).toISOString().split("T")[0]
           : "",
         formattedEndDate: student.End_Date
-          ? formatDate(student.End_Date) // User-friendly date for display
+          ? formatDate(student.End_Date)
           : "N/A",
-        remainingTokens: student.totalTokens - student.redeemedTokens,
+        remainingTokens: student.availableTokens,
         attendedTokens: student.redeemedTokens,
         totalTokens: student.totalTokens,
       }))
     );
   };
-  
 
   const handleClearSearch = () => {
     // Reset search value
     setFilterData({ ...filterData, searchValue: defaultSearchValue });
 
     // Retrieve all data from sessionStorage
-  const storedData = JSON.parse(sessionStorage.getItem("all-students"));
-  const allPagesData = storedData ? storedData.students : [];
+    const storedData = JSON.parse(sessionStorage.getItem("all-students"));
+    const allPagesData = storedData ? storedData.students : [];
 
     // Reset the filtered students to the full data
     setFilteredStudents(allPagesData);
@@ -529,18 +536,18 @@ const StudentsTable = () => {
           )
           .join(" "),
         email: student.Email,
-        mobile: student.Mobile,
+        mobile: formatMobileNumber(student.Mobile),
         courseName: student.Course_Name1 || "-",
         courseMode: student.Student_Type || "-",
         branch: student.Branch || "-",
         enrollmentDate: formatDate(student.Enrollment_Date),
         endDate: student.End_Date
-        ? new Date(student.End_Date).toISOString().split("T")[0]
-        : "",
-      formattedEndDate: student.End_Date
-        ? formatDate(student.End_Date)
-        : "N/A",
-        remainingTokens: student.totalTokens - student.redeemedTokens,
+          ? new Date(student.End_Date).toISOString().split("T")[0]
+          : "",
+        formattedEndDate: student.End_Date
+          ? formatDate(student.End_Date)
+          : "N/A",
+        remainingTokens: student.availableTokens,
         attendedTokens: student.redeemedTokens,
         totalTokens: student.totalTokens,
       }))
@@ -550,32 +557,6 @@ const StudentsTable = () => {
   const handleSearchKeyChange = (e) => {
     setFilterData({ ...filterData, searchOnKey: e.target.value });
   };
-
-  // async function fetchStudent() {
-  //   try {
-  //     let searchKey = "";
-  //     if (filterData.searchOnKey === "name") {
-  //       searchKey = `${filterData.searchOnKey}`.replace("name", "Student_Name");
-  //     } else if (filterData.searchOnKey === "mobile") {
-  //       searchKey = `${filterData.searchOnKey}`.replace("mobile", "Mobile");
-  //     } else if (filterData.searchOnKey === "email") {
-  //       searchKey = `${filterData.searchOnKey}`.replace("email", "Email");
-  //     }
-  //     const res = await axios.get(
-  //       `${endpoints.serverBaseURL}/api/std/search-students`,
-  //       {
-  //         params: { searchKey: searchKey, searchValue: filterData.searchValue },
-  //       }
-  //     );
-  //     setFilteredStudents(res.data.data);
-  //   } catch (e) {}
-  // }
-  // useEffect(() => {
-  //   if (debouncedSearchTerm) {
-  //     fetchStudent();
-  //   }
-  //   setFilteredStudents(allStudents);
-  // }, [debouncedSearchTerm, allStudents]);
 
   const handleCancelEdit = () => {
     setEditingToken(null);
@@ -590,7 +571,7 @@ const StudentsTable = () => {
   const handleTokenValueChange = (event) => {
     const inputValue = event.target.value;
 
-    const maxTokens = 9999;
+    const maxTokens = 99;
     if (/^\d*$/.test(inputValue) && Number(inputValue) <= maxTokens) {
       setNewTokenValue(inputValue);
     }
@@ -625,13 +606,11 @@ const StudentsTable = () => {
 
   const handleSaveEndDate = async (rowId, newEndDate) => {
     try {
-      // Validate newEndDate
       if (!newEndDate) {
         toast.error("Please provide a valid end date.");
         return;
       }
 
-      // Send API request to update the end date
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/std/change-endDate`,
         {
@@ -643,24 +622,22 @@ const StudentsTable = () => {
       if (response.status === 200) {
         toast.success("End date updated successfully.");
 
-        // Retrieve current page's data from sessionStorage
+        const updatedStudent = response.data.student;
+
         const storedData = JSON.parse(sessionStorage.getItem("all-students"));
 
         if (storedData) {
-          // Update the student's end date locally
           const updatedStudents = storedData.students.map((student) =>
             student.zoho_id === rowId
-              ? { ...student, End_Date: newEndDate }
+              ? { ...student, End_Date: updatedStudent.endDate }
               : student
           );
 
-          // Update sessionStorage with the modified data
           sessionStorage.setItem(
-            `page-${page}`,
+            "all-students",
             JSON.stringify({ ...storedData, students: updatedStudents })
           );
 
-          // Update React state with the modified data
           setStudents(updatedStudents);
           setFilteredStudents(updatedStudents);
           setRows(
@@ -674,30 +651,32 @@ const StudentsTable = () => {
                 )
                 .join(" "),
               email: student.Email,
-              mobile: student.Mobile,
+              mobile: formatMobileNumber(student.Mobile),
               courseName: student.Course_Name1 || "-",
               courseMode: student.Student_Type || "-",
+              branch: student.Branch || "-",
               enrollmentDate: formatDate(student.Enrollment_Date),
               endDate: student.End_Date
-          ? new Date(student.End_Date).toISOString().split("T")[0]
-          : "",
-        formattedEndDate: student.End_Date
-          ? formatDate(student.End_Date)
-          : "N/A",
-              remainingTokens: student.totalTokens - student.redeemedTokens,
+                ? new Date(student.End_Date).toISOString().split("T")[0]
+                : "",
+              formattedEndDate: student.End_Date
+                ? formatDate(student.End_Date)
+                : "N/A",
+              remainingTokens: student.availableTokens,
               attendedTokens: student.redeemedTokens,
               totalTokens: student.totalTokens,
             }))
           );
         }
 
-        // Reset any editing states (if applicable)
         setEditingEndDate(null);
         setNewEndDateValue("");
       }
     } catch (error) {
       console.error("Failed to update end date:", error);
-      toast.error("Failed to update end date.");
+      const errorMessage =
+        error.response?.data?.message || "Failed to update end date.";
+      toast.error(errorMessage);
     }
   };
 
@@ -715,43 +694,43 @@ const StudentsTable = () => {
       field: "name",
       headerName: "Name",
       flex: 1.5,
-      headerAlign: "center",
-      align: "center",
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "email",
       headerName: "Email",
       flex: 1.3,
-      headerAlign: "center",
-      align: "center",
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "mobile",
       headerName: "Mobile",
       flex: 1,
       headerAlign: "center",
-      align: "center",
+      align: "right",
     },
     {
       field: "courseName",
       headerName: "Course Name",
       flex: 2,
       headerAlign: "center",
-      align: "center",
+      align: "start",
     },
     {
       field: "courseMode",
       headerName: "Course Mode",
       flex: 1,
       headerAlign: "center",
-      align: "center",
+      align: "start",
     },
     {
       field: "branch",
       headerName: "Branch",
       flex: 1,
-      headerAlign: "center",
-      align: "center",
+      headerAlign: "start",
+      align: "start",
     },
     {
       field: "enrollmentDate",
@@ -784,7 +763,7 @@ const StudentsTable = () => {
               size="small"
               type="date"
               sx={{
-                width: "200px",
+                width: "195px",
                 ".MuiInputBase-input": { textAlign: "center" },
               }}
               inputProps={{
@@ -862,13 +841,12 @@ const StudentsTable = () => {
           <Typography
             sx={{
               textAlign: "center",
-              // fontWeight: 'bold',
               fontSize: "14px",
               mb: 1,
               textTransform: "uppercase",
             }}
           >
-            Tokens
+            Access Days
           </Typography>
           <Box
             sx={{
@@ -878,53 +856,49 @@ const StudentsTable = () => {
               gap: 1,
             }}
           >
-            {/* Tokens Display Heading */}
+            {/* Updated Tokens Display Heading */}
             <Typography
               sx={{
                 width: "33%",
                 textAlign: "center",
-                // fontWeight: 'bold',
+                fontSize: "13px",
+              }}
+            >
+              Total
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                borderColor: "black",
+                borderWidth: "1px",
+              }}
+            />
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "center",
+                fontSize: "13px",
+              }}
+            >
+              Attended
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                borderColor: "black",
+                borderWidth: "1px",
+              }}
+            />
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "center",
                 fontSize: "13px",
               }}
             >
               Available
-            </Typography>
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                borderColor: "black",
-                borderWidth: "1px",
-              }}
-            />
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "center",
-                // fontWeight: 'bold',
-                fontSize: "13px",
-              }}
-            >
-              Redeemed
-            </Typography>
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                borderColor: "black",
-                borderWidth: "1px",
-              }}
-            />
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "end",
-                // fontWeight: 'bold',
-                fontSize: "13px",
-                paddingLeft: "1px",
-              }}
-            >
-              Total
             </Typography>
           </Box>
         </Box>
@@ -979,52 +953,33 @@ const StudentsTable = () => {
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center", // Adjusted to align content in the middle
+              alignItems: "center",
               paddingTop: "12px",
             }}
           >
-            {/* Tokens Display */}
-            <Typography
-              sx={{
-                width: "33%",
-                textAlign: "center",
-                fontSize: "13px",
-              }}
-            >
-              {params.row.remainingTokens}
-            </Typography>
-            <Typography
-              sx={{
-                width: "23%",
-                textAlign: "center",
-                fontSize: "13px",
-                paddingLeft: "6px",
-              }}
-            >
-              {params.row.attendedTokens}
-            </Typography>
+            {/* Updated Tokens Display */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 0.3,
-                width: "43%",
+                gap: 0.5,
+                width: "33%",
                 justifyContent: "center",
-                position: "relative", // Ensure positioning context for children
+                position: "relative",
                 ":hover .edit-icon": {
-                  visibility: "visible", // Show the icon only on hover
+                  visibility: "visible",
                 },
               }}
             >
               <Typography
                 sx={{
                   fontSize: "13px",
-                  paddingLeft: "45px",
+                  textAlign: "center",
                 }}
               >
                 {params.row.totalTokens}
               </Typography>
-              {/* Edit Icon for Super Admin */}
+              {/* Edit Icon for Super Admin next to Total */}
               {roles.isSuperAdmin && (
                 <Tooltip title="Edit Token">
                   <IconButton
@@ -1041,6 +996,25 @@ const StudentsTable = () => {
                 </Tooltip>
               )}
             </Box>
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "start",
+                fontSize: "13px",
+              }}
+            >
+              {params.row.attendedTokens}
+            </Typography>
+            <Typography
+              sx={{
+                width: "33%",
+                textAlign: "start",
+                fontSize: "13px",
+                marginRight: "3px",
+              }}
+            >
+              {params.row.remainingTokens}
+            </Typography>
           </Box>
         );
       },
@@ -1056,8 +1030,6 @@ const StudentsTable = () => {
       ),
     },
   ];
-
- 
 
   return (
     <Box
@@ -1104,7 +1076,7 @@ const StudentsTable = () => {
                 flexGrow: 1,
               }}
             >
-              Candidate Data
+              Candidate List
             </Typography>
 
             {/* Dropdown */}
@@ -1211,6 +1183,7 @@ const StudentsTable = () => {
             ) : rows.length > 0 ? (
               <>
                 <DataGrid
+                  autoHeight
                   rows={rows}
                   columns={columns}
                   getRowId={(row) => row.id}
@@ -1230,6 +1203,7 @@ const StudentsTable = () => {
                       backgroundColor: "#f5f5f5",
                       fontWeight: "bold",
                     },
+                    // "& .MuiDataGrid-virtualScroller": { overflow: "hidden !important" },
                   }}
                   hideFooter
                 />

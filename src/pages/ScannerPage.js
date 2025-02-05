@@ -22,6 +22,7 @@ import axios from "axios";
 import endpoints from "../Endpoints/endpoint";
 import { toast } from "react-toastify";
 import IDCard from "../components/IDCard";
+import { QrCodeIcon } from "lucide-react";
 
 export default function ScannerPage() {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ export default function ScannerPage() {
 
   const errorCallback = () => {
     setScanError("QR Not Found");
-    setShowScanAgain(true); // Show button to scan again
+    setShowScanAgain(true);
   };
 
   useEffect(() => {
@@ -82,8 +83,10 @@ export default function ScannerPage() {
 
   const handleScanSuccess = async (decodedText) => {
     try {
-      if (scanResult || scanError) return;
-      console.log("Extracted data:", decodedText);
+      console.log("Decoded Text:", decodedText,scanError,scanResult);
+      
+      // if (scanResult || scanError) return;
+      // console.log("Extracted data:", decodedText);
       const qrData = JSON.parse(decodedText);
       console.log("qr data:", qrData);
       setSelectedStudent(qrData);
@@ -106,12 +109,18 @@ export default function ScannerPage() {
         toast.error(`Scan token has expired. Cannot mark attendance.`);
         return;
       }
+
+      const checkerData = JSON.parse(sessionStorage.getItem("checker")) || {}; // Retrieve stored checker data
+const { selectedBranch, email } = checkerData;
+console.log("Checker Data:", checkerData);
   
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/scan/validate-qr`,
         {
           qrData,
           companyId: companyData?.id,
+          branch: selectedBranch,
+          Email: email,
         }
       );
   
@@ -206,21 +215,25 @@ export default function ScannerPage() {
   
   
 
-  const handleScanAgain = () => {
-  setScanResult(null);
-  setScanError(null);
-  setSelectedStudent(null);
-  setShowScanAgain(false);
+//   const handleScanAgain = () => {
+//   setScanResult(null);
+//   setScanError(null);
+//   setSelectedStudent(null);
+//   setShowScanAgain(false);
 
-  // Ensure the scanner is properly cleared and re-rendered
-  if (scannerRef.current) {
-    scannerRef.current.clear().then(() => {
-      scannerRef.current.render(successCallback, errorCallback);
-    }).catch((error) => {
-      console.error("Failed to clear scanner:", error);
-    });
-  }
-};
+//   // Ensure the scanner is properly cleared and re-rendered
+//   if (scannerRef.current) {
+//     scannerRef.current.clear().then(() => {
+//       scannerRef.current.render(successCallback, errorCallback);
+//     }).catch((error) => {
+//       console.error("Failed to clear scanner:", error);
+//     });
+//   }
+// };
+
+const handleScanAgain = () => {
+  window.location.reload();
+}
 
 
   const initializeScanner = () => {
@@ -362,14 +375,15 @@ export default function ScannerPage() {
 
             {showScanAgain && (
               <Grid item xs={12} sx={{ marginTop: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleScanAgain}
-                >
-                  Scan Again
-                </Button>
-              </Grid>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleScanAgain}
+                startIcon={<QrCodeIcon />}
+              >
+                Scan Again
+              </Button>
+            </Grid>
             )}
           </Grid>
         </Grid>

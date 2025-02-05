@@ -1,155 +1,8 @@
-// import React from "react";
-// import { Box, Typography, Button } from "@mui/material";
-// import QRCode from "qrcode.react";
-
-// const IDCard = ({ student, onPrint }) => {
-//     const formatDate = (dateString) => {
-//         const options = { year: "numeric", month: "short", day: "numeric" };
-//         return new Date(dateString).toLocaleDateString(undefined, options);
-//       };
-
-//       const calculateEndDate = (dateString) => {
-//         const enrollmentDate = new Date(dateString);
-//         enrollmentDate.setMonth(enrollmentDate.getMonth() + 3);
-//         return enrollmentDate.toISOString().split("T")[0];
-//       };
-
-//       const qrValue = `Student: ${student.Student_Name} | Enrollment: ${formatDate(student.Enrollment_Date)} | Valid Until: ${formatDate(calculateEndDate(student.Enrollment_Date))}`;
-
-//       console.log("QR Code Value:", qrValue);
-
-//   return (
-//     <Box
-//       sx={{
-//         display: "flex",
-//         flexDirection: "column",
-//         alignItems: "center",
-//         textAlign: "center",
-//         padding: 2,
-//         border: "1px solid #ccc",
-//         borderRadius: 2,
-//         boxShadow: 3,
-//         width: 300,
-//         bgcolor: "background.paper",
-//       }}
-//     >
-//       <Typography variant="h6" sx={{ mb: 1 }}>
-//         Student ID Card
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Name:</strong> {student.Student_Name}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Email:</strong> {student.Email}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Mobile:</strong> {student.Mobile}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Enrollment Date:</strong> {formatDate(student.Enrollment_Date)}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Valid Until:</strong> {formatDate(calculateEndDate(student.Enrollment_Date))}
-//       </Typography>
-//       <Box sx={{ my: 2 }}>
-//         {/* <QRCode
-//           value={`Student: ${student.Student_Name}\nEnrollment: ${student.Enrollment_Date}\nValid Until: ${calculateEndDate(student.Enrollment_Date)}`}
-//         /> */}
-
-// <QRCode value={qrValue} />
-
-//       </Box>
-//       <Button variant="contained" onClick={onPrint}>
-//         Print ID Card
-//       </Button>
-//     </Box>
-//   );
-// };
-
-// export default IDCard;
-
-// import React from "react";
-// import { Box, Typography, Button } from "@mui/material";
-// import QRCode from "qrcode.react";
-
-// const IDCard = ({ student, onPrint }) => {
-//   // Format date as MM/DD/YYYY
-//   const formatDate = (dateString) => {
-//     const date = new Date(dateString);
-//     const month = ("0" + (date.getMonth() + 1)).slice(-2);
-//     const day = ("0" + date.getDate()).slice(-2);
-//     const year = date.getFullYear();
-//     return `${month}/${day}/${year}`;
-//   };
-
-//   // Calculate the end date (3 months after enrollment)
-//   const calculateEndDate = (dateString) => {
-//     const enrollmentDate = new Date(dateString);
-//     enrollmentDate.setMonth(enrollmentDate.getMonth() + 3);
-//     return enrollmentDate.toISOString().split("T")[0];
-//   };
-
-//   // Create a safe QR code value
-//   const qrValue = encodeURIComponent(`Student: ${student.Student_Name} | Enrollment: ${formatDate(student.Enrollment_Date)} | Valid Until: ${formatDate(calculateEndDate(student.Enrollment_Date))}`);
-
-//   return (
-//     <Box
-//       sx={{
-//         display: "flex",
-//         flexDirection: "column",
-//         alignItems: "center",
-//         textAlign: "center",
-//         padding: 2,
-//         border: "1px solid #ccc",
-//         borderRadius: 2,
-//         boxShadow: 3,
-//         width: 300,
-//         bgcolor: "background.paper",
-//       }}
-//     >
-//       <Typography variant="h6" sx={{ mb: 1 }}>
-//         Student ID Card
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Name:</strong> {student.Student_Name}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Email:</strong> {student.Email}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Mobile:</strong> {student.Mobile}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Enrollment Date:</strong> {formatDate(student.Enrollment_Date)}
-//       </Typography>
-//       <Typography variant="body1">
-//         <strong>Valid Until:</strong> {formatDate(calculateEndDate(student.Enrollment_Date))}
-//       </Typography>
-//       <Box sx={{ my: 2 }}>
-//         <QRCode value={qrValue} />
-//       </Box>
-//       <Button variant="contained" onClick={onPrint}>
-//         Print ID Card
-//       </Button>
-//     </Box>
-//   );
-// };
-
-// export default IDCard;
-
-import React, {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import htmlToCanvas from "html2canvas";
 import {
   Box,
   Typography,
-  Divider,
-  Button,
   IconButton,
   Tooltip,
   CircularProgress,
@@ -163,10 +16,9 @@ import {
   Email,
   Phone,
   SupportAgent,
-  WhatsApp,
 } from "@mui/icons-material";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
-import DownloadIcon from "@mui/icons-material/Download";
+import bharti from "../assets/Books.png";
 
 const IDCard = ({
   candidate,
@@ -176,6 +28,7 @@ const IDCard = ({
   handleCloseModal,
 }) => {
   const cardRef = useRef();
+  const [loading, setLoading] = useState(false);
 
   const {
     name: studentNameFromStudents,
@@ -184,6 +37,8 @@ const IDCard = ({
     enrollmentDate: studentEnrollmentDate,
     endDate: studentEndDate,
     id: studentId,
+    branch: studentBranch,
+    courseName: studentCourseName,
   } = students || {};
 
   const {
@@ -191,7 +46,11 @@ const IDCard = ({
     enrollmentDate: candidateEnrollmentDate,
     endDate: candidateEndDate,
     id: candidateId,
+    branch: candidateBranch,
+    courseName: candidateCourseName,
   } = candidate || {};
+
+  console.log("candidate", candidate);
 
   const name = studentNameFromCandidate || studentNameFromStudents;
   const email = studentEmail || "";
@@ -199,8 +58,10 @@ const IDCard = ({
   const enrollment = candidateEnrollmentDate || studentEnrollmentDate;
   const end = candidateEndDate || studentEndDate;
   const id = candidateId || studentId;
-  const supportContact = "+1 800 123 4567"; // Example support contact
-  const [loading, setLoading] = useState(false);
+  const branch = candidate?.Branch || studentBranch || "";
+  const courseName = candidate?.course || studentCourseName || "";
+  const supportContact = "08071680908";
+  const supportEmail = "Support@bhartisharemarket.com";
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -254,11 +115,6 @@ const IDCard = ({
       const imageBlob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
-
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(imageBlob);
-      link.download = "id-card.png";
-      link.click();
 
       if (mobileNumber) {
         const formData = new FormData();
@@ -321,7 +177,7 @@ const IDCard = ({
           <Close sx={{ fontSize: 20 }} />
         </IconButton>
       )}
-      <Box sx={{ position: "relative" }}>
+      <Box sx={{ position: "relative", mt: 1 }}>
         <Box
           ref={cardRef}
           sx={{
@@ -331,7 +187,6 @@ const IDCard = ({
             backgroundColor: "white",
             boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
             borderBottom: "5px solid orange",
-
             pb: 0,
             boxSizing: "border-box",
           }}
@@ -339,15 +194,14 @@ const IDCard = ({
           <Box
             sx={{
               position: "relative",
-              height: 200,
+              height: 180,
               background: "linear-gradient(45deg, #FF6B2B, #FF8C42)",
-              borderRadius: "0% 0% 97% 0% / 56% 10% 86% 47%  ",
+              borderRadius: "0% 0% 97% 0% / 56% 10% 86% 47%",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            {/* Company Logo */}
             <Box
               sx={{
                 position: "absolute",
@@ -355,188 +209,251 @@ const IDCard = ({
                 left: 10,
                 backgroundColor: "white",
                 borderRadius: "12px",
-                boxShadow: "6px 5px 40px 1.5px rgb(114, 112, 112)",
+                // boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                // p: 0.5,
               }}
             >
               <img
-                src="https://res.cloudinary.com/dcjnwh1ll/image/upload/v1735376110/Books_nxd7wo.png" // Replace with the actual logo path
+                src={bharti}
                 alt="Company Logo"
-                style={{ width: 65, height: 65 }}
+                style={{ width: 55, height: 55 }}
               />
             </Box>
 
-            <Box
-              sx={{
-                backgroundColor: "white",
-                p: 1,
-                borderRadius: 2,
-                mt: 11,
-                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                transform: "translateY(20px)",
-              }}
-            >
-              <QRCode
-                value={JSON.stringify({
-                  id: id,
-                  studentName: name,
-                  mobileNumber: mobile,
-                  enrollmentDate: enrollment,
-                  endDate: end,
-                })}
-                size={110}
-              />
-            </Box>
-          </Box>
-
-          <Box sx={{ p: 4, pt: 6 }}>
-            <Box sx={{}}>
-              <Typography
-                variant="h5" // Slightly larger and more impactful
+            {!candidate ? (
+              <Box
                 sx={{
-                  mb: 0.5,
-                  pb: 1,
-                  borderBottom: "1px solid rgba(0,0,0,0.2)", // Slightly darker and solid border for stronger emphasis
-                  fontWeight: 700, // Bold weight for strong emphasis
-                  fontFamily: "'Montserrat', sans-serif", // Professional, clean, and modern
-                  fontSize: "1.5rem", // Larger font size for better visibility (~24px)
-                  color: "#000", // Strong black for a sharp look
-                  // textTransform: "", // Optional: Makes the name appear more official
-                  letterSpacing: "0.5px", // Slight spacing for a polished look
-                  lineHeight: 1.2, // Compact yet readable
+                  backgroundColor: "white",
+                  p: "6px",
+                  borderRadius: 2,
+                  mt: 4,
+                  transform: "translateY(20px)",
+                  border: "1px solid #ccc",
                 }}
               >
-                {name}
-              </Typography>
-            </Box>
+                <QRCode
+                  value={JSON.stringify({
+                    id,
+                    studentName: name,
+                    mobileNumber: mobile,
+                    enrollmentDate: enrollment,
+                    endDate: end,
+                    Branch: branch,
+                    course: courseName,
+                  })}
+                  size={100}
+                />
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  backgroundColor: "white",
+                  p: 1,
+                  borderRadius: 2,
+                  mt: 9,
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                  transform: "translateY(20px)",
+                }}
+              >
+                <img
+                  src="https://cdn-icons-png.flaticon.com/256/5610/5610944.png"
+                  alt="Verified"
+                  style={{ width: 70, height: 70 }}
+                />
+              </Box>
+            )}
+          </Box>
 
-            {email && (
+          <Box sx={{ p: 3, pt: 3 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 0.5,
+                pb: 1,
+                borderBottom: "1px solid rgba(0,0,0,0.2)",
+                fontWeight: 700,
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: "1.3rem",
+                color: "#000",
+                letterSpacing: "0.5px",
+                lineHeight: 1.2,
+                // ml: 5,
+                textAlign: "center",
+              }}
+            >
+              {name}
+            </Typography>
+
+            {!candidate && email && (
               <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{
-                  mb: 2,
+                  mb: 1.5,
                   display: "flex",
                   alignItems: "center",
                   mt: 1,
-                  fontWeight: 500, // Slightly bold for better visibility
-                  fontFamily: "'Roboto', sans-serif", // Clean and modern font
-                  fontSize: "0.93rem", // Slightly larger for clarity
-                  color: "#444", // Darker text color for better contrast
-                }}
-              >
-                <Email sx={{ mr: 1, color: "black" }} />{" "}
-                {/* Orange icon for vibrancy */}
-                {email}
-              </Typography>
-            )}
-
-            {mobile && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  mb: 2,
-                  display: "flex",
-                  alignItems: "center",
                   fontWeight: 500,
                   fontFamily: "'Roboto', sans-serif",
-                  fontSize: "0.95rem",
+                  fontSize: "0.85rem",
                   color: "#444",
                 }}
               >
-                <Phone sx={{ mr: 1, color: "black" }} />{" "}
-                {/* Green icon for phone */}
-                {mobile}
+                <Email sx={{ mr: 1, color: "black", fontSize: "1rem" }} />
+                {email}
               </Typography>
             )}
 
             <Box
               sx={{
                 display: "flex",
-                flexDirection: "row",
+                justifyContent: "space-between",
                 alignItems: "center",
-                gap: 7,
-                borderBottom: "1px dashed black",
-                ml: 2,
+                mb: 1.5,
+                gap: 1,
               }}
             >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontWeight: 500,
-                  flexDirection: "column",
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: "0.95rem",
-                  color: "#444",
-                  mb: 2,
-                }}
-              >
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+              {mobile && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontWeight: 500,
+                    fontFamily: "'Roboto', sans-serif",
+                    fontSize: "0.85rem",
+                    color: "#444",
+                    flex: 1,
+                  }}
+                >
+                  <Phone sx={{ mr: 1, color: "black", fontSize: "1rem" }} />
+                  {mobile}
+                </Typography>
+              )}
+
+              {
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: candidate ? "0.95rem" : "0.85rem",
+                    color: "#444",
+                    justifyContent: "flex-start",
+                    flex: 1,
+                    paddingRight: "5px",
+                    whiteSpace: "nowrap",
+                    gap: "5px",
+                  }}
+                >
+                  <b style={{ marginLeft: candidate ? "8px" : "2px" }}>
+                    Branch:{" "}
+                  </b>
+                  {branch}
+                </Typography>
+              }
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{
+                textAlign: "start",
+                width: "100%",
+                fontSize: "0.9rem",
+                color: "#333",
+                mb: 2,
+                ml: candidate ? "10px" : "0px",
+                display: "flex",
+                alignItems: "start",
+                gap: "6px",
+              }}
+            >
+              <b>Course:</b>
+              {courseName}
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                borderTop: "1px solid rgba(0,0,0,0.2)",
+                borderBottom: "1px solid rgba(0,0,0,0.2)",
+                py: 1,
+                px: 2,
+                mb: 2,
+              }}
+            >
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                >
                   {formatDate(enrollment)}
-                </span>
-                <span style={{ fontSize: "0.85rem", marginTop: "4px" }}>
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "0.70rem", color: "#666" }}
+                >
                   Valid From
-                </span>
-              </Typography>
-
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  fontWeight: 500,
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: "0.95rem",
-                  color: "#444",
-                  textAlign: "center",
-                  mb: 2,
-                }}
-              >
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                >
                   {formatDate(end)}
-                </span>
-                <span style={{ fontSize: "0.85rem", marginTop: "4px" }}>
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "0.70rem", color: "#666" }}
+                >
                   Valid Until
-                </span>
-              </Typography>
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ bottom: -10, position: "relative" }}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  mt: 2,
 
-                  fontWeight: 600, // Slightly bolder to highlight support contact
-                  display: "flex",
-                  alignItems: "center",
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: "1rem", // Slightly larger for emphasis
-                  color: "#333", // Stronger dark text
-                  pb: 0,
-                }}
-              >
-                <SupportAgent sx={{ mr: 1, color: "black", ml: 4 }} />:{" "}
-                {supportContact}
-              </Typography>
-            </Box>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "flex",
+                alignItems: "start",
+                justifyContent: "start",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                color: "#333",
+                mt: 2,
+              }}
+            >
+              <SupportAgent sx={{ mr: 1, ml: 1, fontSize: "1rem" }} />
+              {supportContact}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                color: "#333",
+                mt: 0.5,
+              }}
+            >
+              <Email sx={{ mr: 1, fontSize: "1rem" }} />
+              {supportEmail}
+            </Typography>
           </Box>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
-            mt: 3,
-          }}
-        >
-          {!candidate && (
+        {!candidate && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1,
+              mt: 1.5,
+            }}
+          >
             <Tooltip title="Download ID Card">
               <IconButton
                 onClick={() => handleExport()}
@@ -553,42 +470,45 @@ const IDCard = ({
                 }}
               >
                 <Download sx={{ mr: 1 }} />
-                <Typography sx={{ fontSize: "0.9rem", fontWeight: 500 }}>
+                <Typography sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
                   Download
                 </Typography>
               </IconButton>
             </Tooltip>
-          )}
 
-          {!candidate && (
-            <Tooltip title="Share via WhatsApp">
-              <IconButton
-                onClick={() => handlewp("9807631010")}
-                sx={{
-                  backgroundColor: "#25D366",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "#128C7E",
-                    transform: "scale(1.05)",
-                  },
-                  borderRadius: "50px",
-                  padding: "8px 16px",
-                  transition: "all 0.2s ease",
-                  disabled: { loading },
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
-                ) : (
-                  <WhatsAppIcon sx={{ mr: 1 }} />
-                )}
-                <Typography sx={{ fontSize: "0.9rem", fontWeight: 500 }}>
-                  {loading ? "Sharing..." : "Share"}
-                </Typography>
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
+            {!candidate && (
+              <Tooltip title="Share via WhatsApp">
+                <IconButton
+                  onClick={() => handlewp("9807631010")}
+                  disabled={loading}
+                  sx={{
+                    backgroundColor: "#25D366",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#128C7E",
+                      transform: "scale(1.05)",
+                    },
+                    borderRadius: "50px",
+                    padding: "8px 16px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress
+                      size={20}
+                      // sx={{ color: "white", mr: 1 }}
+                    />
+                  ) : (
+                    <WhatsAppIcon sx={{ mr: 1 }} />
+                  )}
+                  <Typography sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                    {loading ? "Sharing..." : "Share"}
+                  </Typography>
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        )}
       </Box>
     </Box>
   );

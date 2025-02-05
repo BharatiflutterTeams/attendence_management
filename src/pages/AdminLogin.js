@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   TextField,
   Button,
@@ -7,6 +7,11 @@ import {
   Typography,
   Box,
   Avatar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -28,7 +33,9 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  //const setToken = useAuthStore((state) => state.setToken);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +45,7 @@ const AdminLogin = () => {
         {
           email,
           password,
+          branch: selectedBranch,
         }
       );
 
@@ -46,17 +54,20 @@ const AdminLogin = () => {
 
         // Store the token in sessionStorage
         sessionStorage.setItem("jwtToken", token);
+        sessionStorage.setItem(
+          "checker",
+          JSON.stringify({ selectedBranch, email })
+        );
         console.log("Login successful");
         toast.success("Login successful");
 
-        // Decode the token to get the role
         const { role } = jwtDecode(token);
 
         // Navigate based on the role
         if (role === "checker") {
-          navigate("/scanner"); // Redirect to scanner page for checker role
+          navigate("/scanner");
         } else {
-          navigate("/"); // Redirect to home page for other roles
+          navigate("/");
         }
       } else {
         setError("Invalid login credentials");
@@ -65,15 +76,39 @@ const AdminLogin = () => {
     } catch (error) {
       console.error("Error logging in:", error);
       setError("Error logging in. Please try again.");
-      toast.error("Error logging in. Please try again.");
+      toast.error(
+        error.response?.data?.message || "Error logging in. Please try again."
+      );
     }
   };
+
+  const handleBranchChange = (event) => {
+    setSelectedBranch(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          `${endpoints.serverBaseURL}/api/std/fetch-branches`
+        );
+        console.log("Branches:", response.data);
+        setBranches(response.data.allBranches);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBranches();
+  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
 
-  // https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?cs=srgb&dl=pexels-pixabay-261169.jpg&fm=jpg
   return (
     <>
       <Box minHeight="100vh" bgcolor="#f5f5f5">
@@ -84,14 +119,49 @@ const AdminLogin = () => {
             md={7}
             sx={{
               display: { xs: "none", md: "flex" },
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
-              backgroundImage: `url(https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?cs=srgb&dl=pexels-pixabay-261169.jpg&fm=jpg)`, // Replace with your image URL
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              height: "100vh", // Ensure the image covers the entire height
+              backgroundColor: "white",
+              height: "100vh",
+              padding: 4,
             }}
-          />
+          >
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                color: "#f9a51a",
+                fontWeight: "bold",
+                textAlign: "center",
+                marginBottom: 2,
+              }}
+            >
+              India's No. 1 Trusted
+            </Typography>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                color: "#f9a51a",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              Share Market Training
+            </Typography>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                color: "#f9a51a",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              Institute
+            </Typography>
+          </Grid>
           <Grid
             item
             xs={12}
@@ -101,12 +171,9 @@ const AdminLogin = () => {
             alignItems="center"
           >
             <Box sx={{ padding: 5, marginTop: "20px" }}>
-              {/* <Typography variant="h5" component="h3" gutterBottom align="center" sx={{margin:2}}>
-              Bharti-Resort
-            </Typography> */}
               <Avatar
                 alt="Company Logo"
-                src={companyData?.logo} // use the logo from the store
+                src={companyData?.logo}
                 sx={{
                   width: 100,
                   height: 100,
@@ -132,10 +199,7 @@ const AdminLogin = () => {
                 >
                   Admin Login
                 </Typography>
-                <form
-                  onSubmit={handleSubmit}
-                  style={{ background: "#f5f5f5 !important" }}
-                >
+                <form onSubmit={handleSubmit}>
                   <Grid container spacing={3}>
                     <Grid item xs={12}>
                       <TextField
@@ -154,8 +218,7 @@ const AdminLogin = () => {
                       <TextField
                         required
                         label="Password"
-                        placeholder="Password"
-                        type={showPassword ? "text" : "password"} // Toggle between "text" and "password"
+                        type={showPassword ? "text" : "password"}
                         fullWidth
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -180,6 +243,30 @@ const AdminLogin = () => {
                           ),
                         }}
                       />
+                    </Grid>
+                    {/* {isLoading && (
+                      <Grid item xs={12} sx={{ textAlign: "center", mt: 1 }}>
+                        <CircularProgress size={24} />
+                      </Grid>
+                    )} */}
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel shrink>Branches</InputLabel>
+                        <Select
+                          value={selectedBranch}
+                          onChange={handleBranchChange}
+                          displayEmpty
+                          label="Branches"
+                        >
+                          {/* <MenuItem value="" disabled>Select a branch</MenuItem> */}
+                          <MenuItem value="">All</MenuItem>
+                          {branches.map((branch, index) => (
+                            <MenuItem key={index} value={branch}>
+                              {branch}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </Grid>
                     {error && (
                       <Grid item xs={12}>
@@ -208,6 +295,7 @@ const AdminLogin = () => {
             </Box>
           </Grid>
         </Grid>
+        <ToastContainer />
       </Box>
       <ToastContainer />
     </>

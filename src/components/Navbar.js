@@ -231,21 +231,21 @@ const handleLogout=()=>{
     <h3>For assistance, contact us at:</h3>
     <br />
     <Link
-      href="tel:9368303030"
+      href="tel:08071680908"
       sx={{ display: "flex", alignItems: "center", textDecoration: "none", mt: 1 }}
       color="inherit"
     >
       <PhoneIcon sx={{ mr: 1 }} />
-      9368303030
+      08071680908
     </Link>
     <br />
     <Link
-      href="mailto:support@bhartisofttech.com"
+      href="mailto:support@bharatsharemarket.com."
       sx={{ display: "flex", alignItems: "center", textDecoration: "none", mt: 1 }}
       color="inherit"
     >
       <EmailIcon sx={{ mr: 1 }} />
-      support@bhartisofttech.com
+      support@bharatsharemarket.com.
     </Link>
   </DialogContentText>
 </DialogContent>;

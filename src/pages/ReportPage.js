@@ -30,6 +30,7 @@ import axios from "axios";
 import { ClearIcon } from "@mui/x-date-pickers";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 import { CircularProgress } from "@mui/material";
+import endpoints from "../Endpoints/endpoint.js";
 
 const debounce = (func, delay) => {
   let timeout;
@@ -80,7 +81,7 @@ export default function ReportPage() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/scan/attendance`,
+        `${endpoints.serverBaseURL}/api/scan/attendance`,
         {
           params: { month: selectedMonth, year: selectedYear },
         }

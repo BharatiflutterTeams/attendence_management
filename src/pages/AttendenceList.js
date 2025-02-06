@@ -315,7 +315,7 @@ const StudentsTable = () => {
             `${endpoints.serverBaseURL}/api/std/get-students`,
             { params: { limit: "all" } }
           );
-          console.log("Fetched all students:", response.data);
+          // console.log("Fetched all students:", response.data);
 
           const { students, totalCount } = response.data;
 
@@ -695,14 +695,14 @@ const StudentsTable = () => {
       headerName: "Name",
       flex: 1.5,
       headerAlign: "start",
-      align: "start",
+      align: "left",
     },
     {
       field: "email",
       headerName: "Email",
       flex: 1.3,
       headerAlign: "start",
-      align: "start",
+      align: "left",
     },
     {
       field: "mobile",
@@ -716,21 +716,21 @@ const StudentsTable = () => {
       headerName: "Course Name",
       flex: 2,
       headerAlign: "center",
-      align: "start",
+      align: "left",
     },
     {
       field: "courseMode",
       headerName: "Course Mode",
       flex: 1,
       headerAlign: "center",
-      align: "start",
+      align: "left",
     },
     {
       field: "branch",
       headerName: "Branch",
       flex: 1,
       headerAlign: "start",
-      align: "start",
+      align: "left",
     },
     {
       field: "enrollmentDate",

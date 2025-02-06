@@ -83,37 +83,34 @@ export default function ScannerPage() {
 
   const handleScanSuccess = async (decodedText) => {
     try {
-      console.log("Decoded Text:", decodedText,scanError,scanResult);
-      
+      // console.log("Decoded Text:", decodedText, scanError, scanResult);
+
       // if (scanResult || scanError) return;
       // console.log("Extracted data:", decodedText);
       const qrData = JSON.parse(decodedText);
-      console.log("qr data:", qrData);
       setSelectedStudent(qrData);
-      console.log("selected student:", selectedStudent);
       const today = new Date().toDateString();
-  
+
       // Check if the student is already marked
       if (markedStudents[qrData.student]) {
         setScanError(`Already scanned today for ${qrData.student}`);
         toast.error(`Already scanned today for ${qrData.student}`);
         return;
       }
-  
+
       // Check if the scan time is within the valid range
       const currentTime = new Date();
       const scanTokenTime = new Date(qrData.scanTokenTime);
-  
+
       if (currentTime > scanTokenTime) {
         setScanError(`Scan token has expired. Cannot mark attendance.`);
         toast.error(`Scan token has expired. Cannot mark attendance.`);
         return;
       }
 
-      const checkerData = JSON.parse(sessionStorage.getItem("checker")) || {}; // Retrieve stored checker data
-const { selectedBranch, email } = checkerData;
-console.log("Checker Data:", checkerData);
-  
+      const checkerData = JSON.parse(sessionStorage.getItem("checker")) || {};
+      const { selectedBranch, email } = checkerData;
+
       const response = await axios.post(
         `${endpoints.serverBaseURL}/api/scan/validate-qr`,
         {
@@ -123,32 +120,35 @@ console.log("Checker Data:", checkerData);
           Email: email,
         }
       );
-  
+
       if (response.status === 200) {
         const { studentId, redeemedTokens, availableTokens } = response.data;
         let updatedStudents = [];
-  
+
         // Loop through all pages in sessionStorage and update the data
         for (let i = 0; sessionStorage.getItem(`page-${i}`); i++) {
           const pageDataString = sessionStorage.getItem(`page-${i}`);
           console.log(`page-${i} data:`, pageDataString);
-  
+
           if (!pageDataString) continue; // Skip if no data exists
-  
+
           let pageData;
           try {
             pageData = JSON.parse(pageDataString); // Parse the data
           } catch (error) {
             console.error(`Error parsing JSON for page-${i}:`, error.message);
-            continue; // Skip if parsing fails
+            continue; 
           }
-  
+
           // Ensure pageData.students is an array
           if (!pageData.students || !Array.isArray(pageData.students)) {
-            console.error(`Parsed data for page-${i} is not an array of students:`, pageData);
+            console.error(
+              `Parsed data for page-${i} is not an array of students:`,
+              pageData
+            );
             continue;
           }
-  
+
           // Update the relevant student data
           updatedStudents = pageData.students.map((student) => {
             if (student.zoho_id === studentId) {
@@ -160,21 +160,21 @@ console.log("Checker Data:", checkerData);
             }
             return student;
           });
-  
+
           // Update the session storage with the updated students
           pageData.students = updatedStudents;
           sessionStorage.setItem(`page-${i}`, JSON.stringify(pageData)); // Save updated data
         }
-  
+
         // Dispatch storage event after updating sessionStorage
-        window.dispatchEvent(new Event('storage'));
-  
+        window.dispatchEvent(new Event("storage"));
+
         // Now trigger the custom event
         const customEvent = new CustomEvent("updateStudentsData", {
-          detail: { students: updatedStudents }, // Send the updated data
+          detail: { students: updatedStudents },
         });
         window.dispatchEvent(customEvent);
-  
+
         setMarkedStudents((prev) => ({
           ...prev,
           [qrData.student]: today,
@@ -212,37 +212,32 @@ console.log("Checker Data:", checkerData);
       setShowScanAgain(true);
     }
   };
-  
-  
 
-//   const handleScanAgain = () => {
-//   setScanResult(null);
-//   setScanError(null);
-//   setSelectedStudent(null);
-//   setShowScanAgain(false);
+  //   const handleScanAgain = () => {
+  //   setScanResult(null);
+  //   setScanError(null);
+  //   setSelectedStudent(null);
+  //   setShowScanAgain(false);
 
-//   // Ensure the scanner is properly cleared and re-rendered
-//   if (scannerRef.current) {
-//     scannerRef.current.clear().then(() => {
-//       scannerRef.current.render(successCallback, errorCallback);
-//     }).catch((error) => {
-//       console.error("Failed to clear scanner:", error);
-//     });
-//   }
-// };
+  //   // Ensure the scanner is properly cleared and re-rendered
+  //   if (scannerRef.current) {
+  //     scannerRef.current.clear().then(() => {
+  //       scannerRef.current.render(successCallback, errorCallback);
+  //     }).catch((error) => {
+  //       console.error("Failed to clear scanner:", error);
+  //     });
+  //   }
+  // };
 
-const handleScanAgain = () => {
-  window.location.reload();
-}
-
+  const handleScanAgain = () => {
+    window.location.reload();
+  };
 
   const initializeScanner = () => {
     const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
     scanner.render(successCallback, errorCallback);
     scannerRef.current = scanner;
   };
-  
-  
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -303,37 +298,36 @@ const handleScanAgain = () => {
               <Box id="reader" ref={scannerRef} sx={{ width: "100%" }} />
             </Card>
           </Grid>
-          {scanResult &&
-            selectedStudent && (
+          {scanResult && selectedStudent && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                flexDirection: "column",
+                width: "100%",
+              }}
+            >
+              <Typography
+                variant="h6"
+                color="green"
+                sx={{ textAlign: "center", marginTop: 2 }}
+              >
+                {scanResult}
+              </Typography>
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  flexDirection: "column",
                   width: "100%",
+                  marginTop: 2,
                 }}
               >
-                <Typography
-                  variant="h6"
-                  color="green"
-                  sx={{ textAlign: "center", marginTop: 2 }}
-                >
-                  {scanResult}
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    width: "100%",
-                    marginTop: 2,
-                  }}
-                >
-                  <IDCard candidate={selectedStudent} />
-                </Box>
+                <IDCard candidate={selectedStudent} />
               </Box>
-            )}
+            </Box>
+          )}
 
           {Boolean(scanError) && (
             <Typography
@@ -375,15 +369,15 @@ const handleScanAgain = () => {
 
             {showScanAgain && (
               <Grid item xs={12} sx={{ marginTop: 2 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleScanAgain}
-                startIcon={<QrCodeIcon />}
-              >
-                Scan Again
-              </Button>
-            </Grid>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleScanAgain}
+                  startIcon={<QrCodeIcon />}
+                >
+                  Scan Again
+                </Button>
+              </Grid>
             )}
           </Grid>
         </Grid>

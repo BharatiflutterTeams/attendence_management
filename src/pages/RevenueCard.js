@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Typography, Box, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { TrendingUp } from '@mui/icons-material';
+import endpoints from '../Endpoints/endpoint';
 
 const StatsCard = styled(Card)(({ theme }) => ({
   padding: theme.spacing(2),

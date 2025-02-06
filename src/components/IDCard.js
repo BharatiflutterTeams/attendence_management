@@ -50,8 +50,6 @@ const IDCard = ({
     courseName: candidateCourseName,
   } = candidate || {};
 
-  console.log("candidate", candidate);
-
   const name = studentNameFromCandidate || studentNameFromStudents;
   const email = studentEmail || "";
   const mobile = studentMobile || "";

@@ -58,7 +58,6 @@ const AdminLogin = () => {
           "checker",
           JSON.stringify({ selectedBranch, email })
         );
-        console.log("Login successful");
         toast.success("Login successful");
 
         const { role } = jwtDecode(token);
@@ -93,7 +92,6 @@ const AdminLogin = () => {
         const response = await axios.get(
           `${endpoints.serverBaseURL}/api/std/fetch-branches`
         );
-        console.log("Branches:", response.data);
         setBranches(response.data.allBranches);
       } catch (error) {
         console.error("Error fetching branches:", error);

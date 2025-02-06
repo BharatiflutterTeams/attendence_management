@@ -1,6 +1,7 @@
 {
   "name": "admin-dashboard-picnic-engine",
   "version": "0.1.0",
+  "proxy": "https://edu-ams-server.vercel.app",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",

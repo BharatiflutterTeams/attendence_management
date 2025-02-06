@@ -46,7 +46,6 @@ function Home() {
       );
       setStudents(response.data.students);
       setAttendanceStats(response.data.attendanceStats);
-      // console.log("stats:",response.data.attendanceStats);
     } catch (error) {
       console.log(error.response?.data?.message || error.message);
       toast.error(error.response?.data?.message || error.message);
